@@ -86,7 +86,7 @@ diagrams, not guesses.
  Worker Tag (ESP32)        Machine (ESP32 anchors + IMU + interlock)      Laptop
  +-------------+   radio    +-------------------------------+   radio    +-----------+
  | scans RSSI  |<---------->| beacons ID + blind zones;     |<---------->| Gateway   |
- | predicts    | heartbeat  | IMU = moving? cab OLED+buzzer; |  alerts    | heatmap + |
+ | predicts    |  heartbeat | IMU = moving? cab OLED+buzzer |   alerts   | heatmap + |
  | convergence |            | servo interlock halts drive   |            | shift     |
  | vibrates    |            +-------------------------------+            | report    |
  +-------------+                                                         +-----------+
