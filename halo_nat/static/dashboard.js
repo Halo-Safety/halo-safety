@@ -8,7 +8,7 @@ function addEventToTable(event) {
         event.worker_id,
         event.machine_id,
         event.rssi ?? "N/A",
-        event.event,
+        event.event ?? event.event_type ?? "N/A",
         event.timestamp ?? new Date().toLocaleTimeString()
     ];
 

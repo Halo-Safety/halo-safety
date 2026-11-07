@@ -38,10 +38,11 @@ def add_event(worker_id, machine_id, rssi, event_type):
 def get_events():
     """Retrieve all events from the database."""
     conn = sqlite3.connect(DATABASE)
+    conn.row_factory = sqlite3.Row  # This allows us to access columns by name
     cursor = conn.cursor()
 
     cursor.execute('SELECT * FROM events')
-    events = cursor.fetchall()
+    events = [dict(row) for row in cursor.fetchall()]
 
     conn.close()
     return events
