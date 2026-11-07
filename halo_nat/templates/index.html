@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title> Halo Safety Dashboard</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <header>
+        <h1>HALO</h1>
+        <p>Worker Safety Monitoring System</p>
+    </header>
+    <main>
+        <section class="status">
+            <h2>System Status</h2>
+            <p id="system-status">
+                Dashboard Online
+            </p>
+        </section>
+        <section class="alerts">
+            <h2>Active Alerts</h2>
+            <div id="active-alerts">
+                No active alerts
+            </div>
+        </section>
+        <section class="history">
+            <h2>Near-Miss History</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Worker</th>
+                        <th>Machine</th>
+                        <th>RSSI</th>
+                        <th>Event</th>
+                        <th>Time</th>
+                    </tr>
+                </thead>
+                <tbody id="event-table"></tbody>
+            </table>
+        </section>
+    </main>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/static/dashboard.js"></script>
+</body>
+</html>
