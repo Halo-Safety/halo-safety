@@ -13,6 +13,40 @@ app = Flask(__name__)
 app.config["SECRET_KEY"] = "halo_demo_key"
 socketio = SocketIO(app, cors_allowed_origins="*")
 
+
+def _require_text(data, field):
+    value = data.get(field)
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"'{field}' must be a non-empty string")
+    return value
+
+
+def process_device_event(data):
+    event_type = _require_text(data, "event")
+
+    if event_type in {"PROXIMITY_ALERT", "ALERT_CLEAR"}:
+        worker_id = _require_text(data, "worker_id")
+        machine_id = _require_text(data, "machine_id")
+        rssi = data.get("rssi")
+        if rssi is not None and (isinstance(rssi, bool) or not isinstance(rssi, int)):
+            raise ValueError("'rssi' must be an integer")
+
+        add_event(worker_id, machine_id, rssi, event_type)
+        socketio.emit("new_alert" if event_type == "PROXIMITY_ALERT" else "alert_clear", data)
+    elif event_type == "HEARTBEAT":
+        if "device_id" in data:
+            _require_text(data, "device_id")
+            _require_text(data, "device_type")
+        else:
+            _require_text(data, "worker_id")
+            _require_text(data, "machine_id")
+    elif event_type == "DEVICE_DISCONNECT":
+        _require_text(data, "device_id")
+        _require_text(data, "device_type")
+    else:
+        raise ValueError(f"Unsupported event type: {event_type}")
+
+
 @app.route("/")
 def home():
     return render_template("index.html")
@@ -30,10 +64,23 @@ def demo_alert():
         "machine_id": "MACHINE_01",
         "rssi": -55
     }
-    add_event(
-        data["worker_id"], data["machine_id"], data["rssi"], data["event"])
-    socketio.emit("new_alert", data)
+    process_device_event(data)
     return jsonify({"success": True, "message": "Demo alert generated"})
+
+
+@app.route("/api/device-event", methods=["POST"])
+def device_event():
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return jsonify({"success": False, "message": "Request body must be a JSON object"}), 400
+
+    try:
+        process_device_event(data)
+    except ValueError as error:
+        return jsonify({"success": False, "message": str(error)}), 400
+
+    return jsonify({"success": True, "message": f"{data['event']} processed"})
+
 
 def main():
     initialize_database()

@@ -30,6 +30,10 @@ fetch("/api/events")
 // Listen for new events from Flask
 socket.on("new_alert", event => {
     addEventToTable(event);
-    activeAlerts.textContent = '${event.worker_id} detected near ${event.machine_id}';
-    
+    activeAlerts.textContent = `${event.worker_id} detected near ${event.machine_id}`;
+});
+
+socket.on("alert_clear", event => {
+    addEventToTable(event);
+    activeAlerts.textContent = "No active alerts";
 });

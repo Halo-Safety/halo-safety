@@ -1,3 +1,3 @@
 import math
 
-# Coordinate of the three
+# Coordinate of the three machine-mounted anchors
