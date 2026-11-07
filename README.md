@@ -290,22 +290,28 @@ straight off a GPIO pin (back-EMF).
 ---
 
 ## Roles (5 people)
-
-1. **Firmware & Radio** - ESP32 tag + machine nodes; heartbeat, RSSI read, alert
-   outputs, and the interlock servo. Owns Steps 1, 3, 6.
-2. **Signal Intelligence & Decision** - smoothing, distance, predictive convergence,
-   sector detection, IMU motion, decision logic, NIOSH zone encoding. The brains.
-   Owns Steps 2, 4, 5, 7.
-3. **Safety Analytics & Dashboard** - gateway, near-miss database, site heatmap,
-   shift report, web UI. Owns Step 8.
-4. **Hardware & Product** - enclosures, hard-hat / hi-vis vest integration, cab unit
-   + OLED, the machine model with the servo interlock rig, power. Makes it look real.
-5. **Research, Safety Domain & Pitch** - NIOSH data + stats, problem framing, the
-   250- and 600-word submissions, slides, demo script, Q&A prep, backup video. Earns
-   the interdisciplinary bonus (safety domain + communication).
-
-Everyone owns testing their own piece; Role 5 runs the dress rehearsal.
-
+ 
+Two clear duties per person.
+ 
+**1. Firmware & Radio**
+- Get the ESP32s exchanging heartbeats and reading RSSI (plus the IMU and anchors).
+- Drive the outputs: vibration motor, cab buzzer/LED, and the interlock servo.
+**2. Decision Logic (the brains)**
+- Turn RSSI into distance + predictive convergence (closing speed).
+- Write the fire/clear rule using sector + machine-motion, with anti-chatter filtering.
+**3. Analytics & Dashboard**
+- Gateway: log every event from the devices to the laptop.
+- Build the web dashboard: live feed + site heatmap + shift report.
+**4. Hardware & Product**
+- Build the wearable tag (hard hat / vest) and the cab unit.
+- Build the machine model with the auto-stop servo rig so the demo looks real.
+**5. Research, Safety & Pitch**
+- NIOSH blind-zone data + the 250/600-word submissions.
+- Slides, demo script, and the backup video.
+**Handoffs:** Firmware feeds raw anchor RSSI + IMU to Decision Logic (it computes
+sector and motion). Research hands the NIOSH zone numbers to Decision Logic to plug
+in. Everyone tests their own piece; Role 5 runs the dress rehearsal.
+ 
 ---
 
 ## Demo (and why it can't fail)
