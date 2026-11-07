@@ -296,18 +296,23 @@ Two clear duties per person.
 **1. Firmware & Radio**
 - Get the ESP32s exchanging heartbeats and reading RSSI (plus the IMU and anchors).
 - Drive the outputs: vibration motor, cab buzzer/LED, and the interlock servo.
+
 **2. Decision Logic (the brains)**
 - Turn RSSI into distance + predictive convergence (closing speed).
 - Write the fire/clear rule using sector + machine-motion, with anti-chatter filtering.
+
 **3. Analytics & Dashboard**
 - Gateway: log every event from the devices to the laptop.
 - Build the web dashboard: live feed + site heatmap + shift report.
+  
 **4. Hardware & Product**
 - Build the wearable tag (hard hat / vest) and the cab unit.
 - Build the machine model with the auto-stop servo rig so the demo looks real.
+  
 **5. Research, Safety & Pitch**
 - NIOSH blind-zone data + the 250/600-word submissions.
 - Slides, demo script, and the backup video.
+  
 **Handoffs:** Firmware feeds raw anchor RSSI + IMU to Decision Logic (it computes
 sector and motion). Research hands the NIOSH zone numbers to Decision Logic to plug
 in. Everyone tests their own piece; Role 5 runs the dress rehearsal.
