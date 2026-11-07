@@ -1,0 +1,30 @@
+Halo Simulation Instructions:
+
+In Terminal 1:
+
+1. Navigate to project directory
+: cd ...\halo-nat
+
+2. Activate virtual environment
+: venv\Scripts\activate
+
+3. Activate dashboard host
+: python app.py
+
+4. Leave this terminal running
+
+5. View dashboard in browser
+http://127.0.0.1:5000
+
+In separate Terminal 2:
+
+1. Navigate to same project directory and activate environment
+: cd ...\halo-nat
+: venv\Scripts\activate
+
+2.	a) Execute simple demo alert
+: curl.exe -X POST http://127.0.0.1:5000/api/demo-alert
+
+	b) Activate simulator
+: python simulator.py
+	Follow input instructions in terminal
