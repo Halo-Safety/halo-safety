@@ -1,6 +1,7 @@
+<a id="top"></a>
 <div align="center">
 
-# 🦺 Halo Safety
+<h1>🦺 Halo Safety</h1>
 
 **From proximity detection to context-aware worker safety.**
 
@@ -255,6 +256,6 @@ We thank the natHacks organizers and the teams who contribute open safety resear
 
 **Halo Safety · Explore risks. Test scenarios. Build safer systems.**
 
-[Back to top](#-halo-safety)
+[Back to top](#top)
 
 </div>
