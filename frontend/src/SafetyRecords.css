@@ -1,0 +1,41 @@
+.safety-mode-toggle{display:flex;align-items:center;justify-content:flex-start;gap:8px;background:#fff;border:1px solid #dce8ef;border-radius:12px;padding:8px;margin-bottom:17px;flex-wrap:wrap}
+.safety-mode-toggle button{border:0;border-radius:9px;background:transparent;color:#728c9b;padding:10px 14px;font-size:12px;cursor:pointer;font-weight:650}
+.safety-mode-toggle button.active{background:#e5f3f7;color:#27738e}
+.safety-mode-toggle span{margin-left:auto;font-size:10px;color:#93a4b0}
+.safety-org-bar{display:flex;flex-wrap:wrap;align-items:center;gap:14px;border:1px solid #e0eaf0;border-radius:12px;background:#fff;padding:12px 16px;margin-bottom:15px;color:#8396a6;font-size:11px}
+.safety-org-bar label{display:flex;align-items:center;gap:9px}
+.safety-org-bar select{max-width:330px;padding:8px 11px;font-size:12px;border:1px solid #d5e5eb;color:#42677e;background:#f8fbfd;border-radius:8px}
+.safety-org-bar button{display:inline-flex;align-items:center;gap:6px;border:1px solid #d8e6ed;border-radius:8px;padding:9px 11px;background:#f8fbfd;color:#53809a;cursor:pointer}
+.safety-org-bar button:disabled{opacity:.5}
+.safety-error,.safety-success{border-radius:10px;margin:12px 0;padding:12px 15px;font-size:12px;line-height:1.5;overflow-wrap:anywhere}
+.safety-error{background:#fff1ec;border:1px solid #f3d4ca;color:#ad5a48}
+.safety-success{background:#effaf3;border:1px solid #d8efde;color:#35856d}
+.safety-records-head{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:17px}
+.safety-record-kpis{display:flex;align-items:center;gap:13px;flex-wrap:wrap}
+.safety-record-kpis span{color:#70899c;font-size:11px;background:#fff;border:1px solid #e0eaf0;border-radius:10px;padding:11px 13px}
+.safety-record-kpis strong{color:#315e77;font-size:17px;margin-right:5px}
+.safety-add{border:0;border-radius:9px;padding:10px 14px;background:#377a9c;color:#fff;font-size:12px;cursor:pointer;display:inline-flex;gap:8px;align-items:center;justify-content:center;font-weight:650}
+.safety-add:hover{background:#286782}
+.safety-add:disabled{opacity:.5;cursor:not-allowed}
+.safety-cloud-filters{margin-bottom:14px}
+.safety-record-form h2{font-size:18px;color:#34566f;margin:0 0 17px}
+.safety-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+.safety-form-field{display:flex;flex-direction:column;gap:6px;min-width:0;color:#748d9d;font-size:11px}
+.safety-form-field.wide{grid-column:1/-1}
+.safety-form-field input,.safety-form-field textarea,.safety-form-field select{width:100%;max-width:100%;min-width:0;border:1px solid #d8e5ed;border-radius:8px;background:#fbfdfe;padding:10px 11px;font:inherit;font-size:12px;color:#3c607a;outline:none}
+.safety-form-field input:focus,.safety-form-field select:focus,.safety-form-field textarea:focus{border-color:#67a6bf;box-shadow:0 0 0 2px #76b9d02b}
+.safety-form-field textarea{resize:vertical}
+.safety-check{grid-column:1/-1;display:flex;gap:8px;align-items:center;color:#6c8797;font-size:11px}
+.safety-form-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:22px}
+.safety-form-actions>button:first-child{border:1px solid #dce8ed;background:#f5f9fb;color:#5a7b90;border-radius:9px;padding:10px 14px;cursor:pointer}
+.safety-form-subheading{font-size:11px;color:#8398a8;margin:-8px 0 20px}
+.safety-inline-edit{font-size:11px;border:1px solid #cce2eb;background:#e9f5f8;color:#31809a;border-radius:8px;padding:8px 11px;cursor:pointer;display:inline-flex;margin-top:12px}
+.safety-inline-edit:hover{background:#dceff6}
+.safety-text{white-space:pre-wrap;overflow-wrap:anywhere}
+.safety-section-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px}
+.safety-section-head h3{margin:0}
+.safety-section-head .safety-inline-edit{margin:0}
+.safety-detail>.safety-action{margin-top:12px}
+.safety-detail .safety-linked:empty{display:none}
+.safety-persistence-footnote{font-size:10px;color:#849dad;line-height:1.6;margin:18px 3px}
+@media(max-width:700px){.safety-form-grid{grid-template-columns:1fr}.safety-mode-toggle span{width:100%;margin-left:0}.safety-org-bar select{max-width:200px}.safety-record-kpis span{padding:9px 10px}}
