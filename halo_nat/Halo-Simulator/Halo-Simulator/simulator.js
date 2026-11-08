@@ -17,8 +17,19 @@ let distance = 0;
 let pixelsPerMetre;
 let worker = { x: 190, y: 240 };
 const activeEvents = new Map();
+const clearanceEvent = { name: 'Vehicle clearance zone' };
+let clearance = 0.5;
 let dragging = false;
 let imageRequest = 0;
+let referenceLoaded = false;
+let hideReferenceAfterTrace = false;
+let paths = { worker: [], vehicle: [] };
+let run;
+let frame;
+
+function eventTime() {
+  return run ? run.elapsed.toFixed(2) + ' s' : new Date().toLocaleTimeString();
+}
 
 function points(list) {
   return list.map(point => [point.x, point.y].join(',')).join(' ');
@@ -51,23 +62,52 @@ function contains(point, polygon) {
   return inside;
 }
 
+function vehicleOutline() {
+  if (vehicle.shape) return vehicle.shape;
+  const scale = pixelsPerMetre || 20;
+  const x = vehicle.width * scale / 2;
+  const y = vehicle.length * scale / 2;
+  return [{ x: -x, y: -y }, { x, y: -y }, { x, y }, { x: -x, y }];
+}
+
+function distanceToOutline(point, outline) {
+  if (contains(point, outline)) return 0;
+  let nearest = Infinity;
+  for (let i = 0; i < outline.length; i++) {
+    const a = outline[i];
+    const b = outline[(i + 1) % outline.length];
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const squared = dx * dx + dy * dy;
+    const t = squared ? Math.max(0, Math.min(1, ((point.x - a.x) * dx + (point.y - a.y) * dy) / squared)) : 0;
+    nearest = Math.min(nearest, Math.hypot(point.x - a.x - t * dx, point.y - a.y - t * dy));
+  }
+  return nearest;
+}
+
 function updateAlert() {
   const relativeWorker = vehicle && localPoint(worker, vehicle);
   const occupied = relativeWorker ? zones.filter(zone => contains(relativeWorker, zone.points)) : [];
-  const inZone = occupied.length > 0;
-  get('driver').textContent = inZone ? 'Stop. Worker in blind zone.' : 'No active warning';
-  get('walker').textContent = inZone ? 'Step clear of the vehicle.' : 'No active warning';
-  for (const id of ['driver', 'walker']) get(id).classList.toggle('warning', inZone);
+  const inBlindZone = occupied.length > 0;
+  const tooClose = relativeWorker
+    && distanceToOutline(relativeWorker, vehicleOutline()) <= (clearance + 0.25) * (pixelsPerMetre || 20);
+  if (tooClose) occupied.push(clearanceEvent);
+  const warnings = [];
+  if (inBlindZone) warnings.push('Worker in blind zone.');
+  if (tooClose) warnings.push('Worker too close to vehicle.');
+  get('driver').textContent = warnings.length ? 'Stop. ' + warnings.join(' ') : 'No active warning';
+  get('walker').textContent = warnings.length ? 'Step clear of the vehicle.' : 'No active warning';
+  for (const id of ['driver', 'walker']) get(id).classList.toggle('warning', warnings.length > 0);
   for (const [zone, item] of activeEvents) {
     if (occupied.includes(zone)) continue;
-    item.textContent += ' · exited at ' + new Date().toLocaleTimeString();
+    item.textContent += ' · exited at ' + eventTime();
     activeEvents.delete(zone);
   }
   for (const zone of occupied) {
     if (activeEvents.has(zone)) continue;
     get('empty').hidden = true;
     const item = document.createElement('li');
-    const entered = new Date().toLocaleTimeString();
+    const entered = eventTime();
     item.textContent = 'Entered ' + zone.name + ' at ' + entered;
     get('events').prepend(item);
     activeEvents.set(zone, item);
@@ -88,6 +128,7 @@ function renderZones() {
     remove.textContent = 'Remove';
     remove.setAttribute('aria-label', 'Remove ' + zone.name);
     remove.onclick = () => {
+      if (run) return;
       zones = zones.filter(saved => saved !== zone);
       renderZones();
       draw();
@@ -100,7 +141,9 @@ function renderZones() {
 function draw() {
   get('vehicle-pose').setAttribute('visibility', vehicle ? 'visible' : 'hidden');
   get('trace').disabled = !vehicle;
+  get('shape').disabled = !vehicle && !pixelsPerMetre;
   get('vehicle-move').disabled = !vehicle;
+  get('vehicle-path').disabled = !vehicle;
   get('heading').disabled = !vehicle;
   if (vehicle) {
     const scale = pixelsPerMetre || 20;
@@ -108,10 +151,10 @@ function draw() {
     const halfLength = vehicle.length * scale / 2;
     get('vehicle-pose').setAttribute('transform',
       'translate(' + vehicle.x + ' ' + vehicle.y + ') rotate(' + vehicle.heading + ')');
-    for (const [key, value] of Object.entries({
-      x: -halfWidth, y: -halfLength, width: halfWidth * 2, height: halfLength * 2,
-      rx: Math.min(halfWidth, halfLength) * 0.12,
-    })) get('vehicle-body').setAttribute(key, value);
+    const outline = points(vehicleOutline());
+    get('vehicle-body').setAttribute('points', outline);
+    get('vehicle-clearance').setAttribute('points', outline);
+    get('vehicle-clearance').setAttribute('stroke-width', clearance * scale * 2);
     get('vehicle-front').setAttribute('points', points([
       { x: 0, y: -halfLength * 0.87 }, { x: halfWidth * 0.45, y: -halfLength * 0.53 },
       { x: -halfWidth * 0.45, y: -halfLength * 0.53 },
@@ -125,18 +168,27 @@ function draw() {
   get('draft').setAttribute('points', points(draft));
   get('worker').setAttribute('cx', worker.x);
   get('worker').setAttribute('cy', worker.y);
-  get('worker').setAttribute('r', pixelsPerMetre ? pixelsPerMetre * 0.25 : Math.min(width, height) * 0.021);
-  get('finish').disabled = mode !== 'trace' || draft.length < 3;
+  get('worker').setAttribute('r', (pixelsPerMetre || 20) * 0.25);
+  get('finish').textContent = mode === 'shape' ? 'Finish outline' : 'Finish zone';
+  get('finish').disabled = !isTracing(mode) || draft.length < 3;
   updateAlert();
 }
 
+function isTracing(value) {
+  return value === 'trace' || value === 'shape';
+}
+
 function setMode(next, message) {
+  if (isTracing(mode) && !isTracing(next) && hideReferenceAfterTrace) {
+    setReferenceVisible(false);
+    hideReferenceAfterTrace = false;
+  }
   mode = next;
   dragging = false;
-  if (next !== 'trace') draft = [];
+  if (!isTracing(next)) draft = [];
   if (next !== 'scale') scaleStart = undefined;
   if (next !== 'identify') rearPoint = undefined;
-  for (const id of ['move', 'trace', 'scale', 'identify', 'vehicle-move']) {
+  for (const id of ['move', 'trace', 'shape', 'scale', 'identify', 'vehicle-move', 'worker-path', 'vehicle-path']) {
     get(id).setAttribute('aria-pressed', id === next);
   }
   status.textContent = message;
@@ -148,6 +200,202 @@ function placeWorker(point) {
   draw();
 }
 
+function renderPaths() {
+  for (const role of ['worker', 'vehicle']) {
+    const route = role === 'vehicle' ? roundedVehiclePath(paths.vehicle) : paths.worker;
+    get(role + '-route').setAttribute('points', points(route));
+    get('clear-' + role).disabled = paths[role].length === 0;
+  }
+}
+
+function headingFor(dx, dy) {
+  return (Math.atan2(dx, -dy) * 180 / Math.PI + 360) % 360;
+}
+
+function roundedVehiclePath(path) {
+  if (path.length < 3) return path;
+  const result = [path[0]];
+  const maxTrim = 2 * (pixelsPerMetre || 20);
+  for (let i = 1; i < path.length - 1; i++) {
+    const before = path[i - 1];
+    const corner = path[i];
+    const after = path[i + 1];
+    const incoming = { x: corner.x - before.x, y: corner.y - before.y };
+    const outgoing = { x: after.x - corner.x, y: after.y - corner.y };
+    const inLength = Math.hypot(incoming.x, incoming.y);
+    const outLength = Math.hypot(outgoing.x, outgoing.y);
+    const cosine = (incoming.x * outgoing.x + incoming.y * outgoing.y) / (inLength * outLength);
+    if (cosine > 0.999 || cosine < -0.995 || !Number.isFinite(cosine)) {
+      result.push(corner);
+      continue;
+    }
+    const trim = Math.min(maxTrim, inLength * 0.4, outLength * 0.4);
+    const entry = { x: corner.x - incoming.x * trim / inLength, y: corner.y - incoming.y * trim / inLength };
+    const exit = { x: corner.x + outgoing.x * trim / outLength, y: corner.y + outgoing.y * trim / outLength };
+    for (let step = 0; step <= 32; step++) {
+      const t = step / 32;
+      const u = 1 - t;
+      result.push({
+        x: u * u * entry.x + 2 * u * t * corner.x + t * t * exit.x,
+        y: u * u * entry.y + 2 * u * t * corner.y + t * t * exit.y,
+        heading: headingFor(
+          u * (corner.x - entry.x) + t * (exit.x - corner.x),
+          u * (corner.y - entry.y) + t * (exit.y - corner.y),
+        ),
+      });
+    }
+  }
+  result.push(path.at(-1));
+  return result;
+}
+
+for (const role of ['worker', 'vehicle']) {
+  get(role + '-path').onclick = () => {
+    setMode(role + '-path', 'Click successive ' + role + ' waypoints. The first leg starts at the current position.');
+  };
+  get('clear-' + role).onclick = () => {
+    paths[role] = [];
+    renderPaths();
+    status.textContent = 'Path cleared. Click the map to add new waypoints in path mode.';
+  };
+}
+
+function addWaypoint(role, point) {
+  const path = paths[role];
+  const start = role === 'worker' ? worker : vehicle;
+  if (!start) return;
+  const last = path.at(-1) || start;
+  if (Math.hypot(point.x - last.x, point.y - last.y) < 1) return;
+  if (path.length === 0) path.push({ x: start.x, y: start.y });
+  path.push({ x: point.x, y: point.y });
+  renderPaths();
+  status.textContent = role[0].toUpperCase() + role.slice(1) + ' path has ' + (path.length - 1)
+    + ' waypoint(s). Add more or choose Play.';
+}
+
+function makeTrack(path, start, speed) {
+  const segments = [];
+  let length = 0;
+  for (let i = 1; i < path.length; i++) {
+    const from = path[i - 1];
+    const to = path[i];
+    const segmentLength = Math.hypot(to.x - from.x, to.y - from.y);
+    length += segmentLength;
+    segments.push({ from, to, length: segmentLength, end: length });
+  }
+  return { start: path[0] || start, segments, speed, duration: speed > 0 ? length / speed : 0 };
+}
+
+function trackPosition(track, elapsed) {
+  if (!track.start || track.speed === 0 || !track.segments.length) return track.start;
+  const travelled = Math.min(elapsed, track.duration) * track.speed;
+  const segment = track.segments.find(item => travelled < item.end) || track.segments.at(-1);
+  const fraction = Math.max(0, Math.min(1, 1 - (segment.end - travelled) / segment.length));
+  const dx = segment.to.x - segment.from.x;
+  const dy = segment.to.y - segment.from.y;
+  const direction = headingFor(dx, dy);
+  const fromHeading = segment.from.heading ?? direction;
+  const toHeading = segment.to.heading ?? direction;
+  const turn = (toHeading - fromHeading + 540) % 360 - 180;
+  return {
+    x: segment.from.x + dx * fraction,
+    y: segment.from.y + dy * fraction,
+    heading: (fromHeading + fraction * turn + 360) % 360,
+  };
+}
+
+function renderPlayback() {
+  get('setup').disabled = Boolean(run);
+  get('play').disabled = Boolean(run && (run.playing || run.elapsed >= run.duration));
+  get('play').textContent = run ? 'Resume' : 'Play';
+  get('pause').disabled = !run?.playing;
+  get('reset-run').disabled = !run;
+  get('clock').textContent = (run?.elapsed || 0).toFixed(1) + ' s';
+}
+
+function applyTime() {
+  const walker = trackPosition(run.worker, run.elapsed);
+  const truck = trackPosition(run.vehicle, run.elapsed);
+  worker = { x: walker.x, y: walker.y };
+  if (vehicle && truck) Object.assign(vehicle, truck);
+  updateAlert();
+}
+
+function tick(timestamp) {
+  if (!run?.playing) return;
+  const delta = run.lastFrame === undefined ? 0 : Math.min(0.25, (timestamp - run.lastFrame) / 1000);
+  run.lastFrame = timestamp;
+  const target = Math.min(run.duration, run.elapsed + delta);
+  while (run.elapsed < target) {
+    run.elapsed = Math.min(target, run.elapsed + 0.02);
+    applyTime();
+  }
+  draw();
+  if (run.elapsed >= run.duration) {
+    run.playing = false;
+    status.textContent = 'Run complete. Review the encounters or reset to run again.';
+  } else {
+    frame = requestAnimationFrame(tick);
+  }
+  renderPlayback();
+}
+
+get('play').onclick = () => {
+  if (!run) {
+    if (!pixelsPerMetre && !vehicle) {
+      status.textContent = 'Set the diagram scale before running a path.';
+      return;
+    }
+    const speeds = ['worker', 'vehicle'].map(role => {
+      const value = get(role + '-speed').value;
+      return value.trim() === '' ? NaN : Number(value);
+    });
+    if (!speeds.every(speed => Number.isFinite(speed) && speed >= 0 && speed <= 30)) {
+      status.textContent = 'Enter a speed from 0 to 30 m/s for each participant.';
+      return;
+    }
+    const scale = pixelsPerMetre || 20;
+    const workerTrack = makeTrack(paths.worker, { ...worker }, speeds[0] * scale);
+    const vehicleTrack = makeTrack(roundedVehiclePath(paths.vehicle), vehicle && { ...vehicle }, speeds[1] * scale);
+    const duration = Math.max(workerTrack.duration, vehicleTrack.duration);
+    if (!duration) {
+      status.textContent = 'Add a path and set a positive speed for at least one participant.';
+      return;
+    }
+    run = { worker: workerTrack, vehicle: vehicleTrack, duration, elapsed: 0,
+      startWorker: { ...worker }, startVehicle: vehicle && { ...vehicle } };
+    activeEvents.clear();
+    get('events').replaceChildren();
+    get('empty').hidden = false;
+    applyTime();
+  }
+  run.playing = true;
+  run.lastFrame = undefined;
+  dragging = false;
+  status.textContent = 'Running the scenario. Alerts and crossings update as both participants move.';
+  renderPlayback();
+  frame = requestAnimationFrame(tick);
+};
+
+get('pause').onclick = () => {
+  run.playing = false;
+  cancelAnimationFrame(frame);
+  status.textContent = 'Paused. Resume to continue or reset to edit the scenario.';
+  renderPlayback();
+};
+
+get('reset-run').onclick = () => {
+  cancelAnimationFrame(frame);
+  worker = run.startWorker;
+  vehicle = run.startVehicle;
+  run = undefined;
+  activeEvents.clear();
+  get('events').replaceChildren();
+  get('empty').hidden = false;
+  setMode('move', 'Run reset. Your paths are ready to edit or play again.');
+  renderPlayback();
+};
+
 get('scale').onclick = () => {
   distance = Number(get('meters').value);
   if (!Number.isFinite(distance) || distance <= 0) {
@@ -157,15 +405,38 @@ get('scale').onclick = () => {
   scaleStart = undefined;
   setMode('scale', 'Click the first end of the known reference length.');
 };
-get('trace').onclick = () => {
+function startTrace(next, message) {
   draft = [];
-  setMode('trace', 'Click around the blind zone, then choose Finish zone.');
+  if (referenceLoaded && !get('reference-visible').checked) {
+    hideReferenceAfterTrace = true;
+    setReferenceVisible(true);
+  }
+  setMode(next, message);
+}
+get('trace').onclick = () => startTrace('trace', 'Click around the blind zone, then choose Finish zone.');
+get('shape').onclick = () => startTrace('shape', 'Click around the vehicle’s outer edge, then choose Finish outline.');
+get('clearance').onchange = event => {
+  const raw = event.target.value.trim();
+  const value = Number(raw);
+  if (!raw || !Number.isFinite(value) || value < 0) {
+    event.target.value = clearance;
+    status.textContent = 'Enter a clearance of zero or more metres.';
+    return;
+  }
+  clearance = value;
+  draw();
 };
 get('move').onclick = () => setMode('move', 'Tap or drag on the map to move the worker.');
 get('vehicle-move').onclick = () => setMode('vehicle-move', 'Tap or drag to move the vehicle and its blind zones.');
+function setReferenceVisible(visible) {
+  get('reference-visible').checked = visible;
+  map.setAttribute('data-reference', visible);
+  get('diagram').setAttribute('visibility', visible ? 'visible' : 'hidden');
+  get('ruler').setAttribute('visibility', !referenceLoaded || visible ? 'visible' : 'hidden');
+}
 get('reference-visible').onchange = event => {
-  get('diagram').setAttribute('visibility', event.target.checked ? 'visible' : 'hidden');
-  get('ruler').setAttribute('visibility', event.target.checked ? 'visible' : 'hidden');
+  hideReferenceAfterTrace = false;
+  setReferenceVisible(event.target.checked);
 };
 get('heading').oninput = event => {
   if (!vehicle) return;
@@ -179,6 +450,7 @@ get('identify').onclick = () => {
   }
   rearPoint = undefined;
   setMode('identify', 'Click the centre of the vehicle’s rear edge.');
+  if (referenceLoaded) setReferenceVisible(true);
 };
 
 function markVehicle(point) {
@@ -204,13 +476,17 @@ function markVehicle(point) {
     name, length, width: bodyWidth,
   };
   if (vehicle) {
+    if (vehicle.shape) {
+      pose.shape = vehicle.shape.map(vertex => localPoint(mapPosition(vertex, vehicle), pose));
+    }
     for (const zone of zones) {
       zone.points = zone.points.map(vertex => localPoint(mapPosition(vertex, vehicle), pose));
     }
   }
   vehicle = pose;
   renderZones();
-  setMode('vehicle-move', 'Vehicle marked. Add zones or move the vehicle. Hide the reference to see it on its own.');
+  if (referenceLoaded) setReferenceVisible(false);
+  setMode('vehicle-move', 'Vehicle marked. Add blind zones, or move the vehicle on the clean map.');
 }
 
 function moveSelection(point) {
@@ -228,7 +504,30 @@ get('finish').onclick = () => {
     return sum + point.x * next.y - point.y * next.x;
   }, 0);
   if (Math.abs(area) < 1) {
-    status.textContent = 'Trace a zone with at least three corners that enclose an area.';
+    status.textContent = 'Trace at least three corners in order around an enclosed area.';
+    return;
+  }
+  if (mode === 'shape') {
+    const xs = draft.map(point => point.x);
+    const ys = draft.map(point => point.y);
+    const left = Math.min(...xs);
+    const right = Math.max(...xs);
+    const top = Math.min(...ys);
+    const bottom = Math.max(...ys);
+    const scale = pixelsPerMetre || 20;
+    vehicle ??= {
+      x: (left + right) / 2, y: (top + bottom) / 2, heading: 0,
+    };
+    vehicle.name = get('vehicle-name').value.trim() || 'Vehicle';
+    vehicle.shape = draft.map(point => localPoint(point, vehicle));
+    const localXs = vehicle.shape.map(point => point.x);
+    const localYs = vehicle.shape.map(point => point.y);
+    vehicle.width = (Math.max(...localXs) - Math.min(...localXs)) / scale;
+    vehicle.length = (Math.max(...localYs) - Math.min(...localYs)) / scale;
+    get('vehicle-width').value = vehicle.width.toFixed(2);
+    get('vehicle-length').value = vehicle.length.toFixed(2);
+    if (referenceLoaded) setReferenceVisible(false);
+    setMode('move', 'Custom vehicle shape saved. Add blind zones or mark front and rear to set its heading.');
     return;
   }
   let number = zones.length + 1;
@@ -246,15 +545,18 @@ function mapPoint(event) {
 }
 
 map.onpointerdown = event => {
+  if (run) return;
   const point = mapPoint(event);
   if (!point) return;
   if (mode === 'move' || mode === 'vehicle-move') {
     dragging = true;
     map.setPointerCapture(event.pointerId);
     moveSelection(point);
+  } else if (mode === 'worker-path' || mode === 'vehicle-path') {
+    addWaypoint(mode === 'worker-path' ? 'worker' : 'vehicle', point);
   } else if (mode === 'identify') {
     markVehicle(point);
-  } else if (mode === 'trace') {
+  } else if (isTracing(mode)) {
     draft.push(point);
     draw();
   } else if (!scaleStart) {
@@ -278,6 +580,7 @@ map.onpointerdown = event => {
     for (const [key, value] of Object.entries({ x1: scaleStart.x, y1: scaleStart.y, x2: point.x, y2: point.y })) {
       get('ruler').setAttribute(key, value);
     }
+    renderPaths();
     setMode('move', 'Scale saved. Trace the blind zone or move the worker.');
   }
 };
@@ -288,6 +591,7 @@ map.onpointermove = event => {
 };
 map.onlostpointercapture = () => { dragging = false; };
 map.onkeydown = event => {
+  if (run) return;
   const direction = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[event.key];
   if (!['move', 'vehicle-move'].includes(mode) || !direction) return;
   event.preventDefault();
@@ -321,8 +625,10 @@ get('upload').onchange = event => {
       get('diagram').setAttribute('href', reader.result);
       get('diagram').setAttribute('width', width);
       get('diagram').setAttribute('height', height);
-      get('reference-visible').checked = true;
-      get('reference-visible').onchange({ target: get('reference-visible') });
+      referenceLoaded = true;
+      hideReferenceAfterTrace = false;
+      get('reference-visible').disabled = false;
+      setReferenceVisible(true);
       get('sample').hidden = true;
       get('sample').setAttribute('display', 'none');
       for (const key of ['x1', 'y1', 'x2', 'y2']) get('ruler').removeAttribute(key);
@@ -330,13 +636,15 @@ get('upload').onchange = event => {
       pixelsPerMetre = undefined;
       get('grid').setAttribute('display', 'none');
       zones = [];
+      paths = { worker: [], vehicle: [] };
+      renderPaths();
       vehicle = undefined;
       worker = { x: width * 0.2, y: height * 0.5 };
       activeEvents.clear();
       get('events').replaceChildren();
       get('empty').hidden = false;
       renderZones();
-      setMode('move', 'Diagram loaded. Set its scale and trace a blind zone.');
+      setMode('move', 'Diagram loaded. Set its scale, then trace the vehicle shape.');
     };
     image.src = reader.result;
   };
@@ -344,4 +652,5 @@ get('upload').onchange = event => {
 };
 
 renderZones();
+renderPaths();
 draw();
