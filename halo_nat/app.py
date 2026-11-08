@@ -11,7 +11,9 @@ from database import (
 )
 
 from serial_reader import start_serial_reader
+from worker_locator import locator, poll_ftm
 app = Flask(__name__)
+app.register_blueprint(locator)
 app.config["SECRET_KEY"] = os.getenv("HALO_SECRET_KEY", "halo_demo_key")
 
 # Allow the Vite development server and an explicitly configured hosted React origin.
@@ -103,7 +105,10 @@ def main():
     #   $env:HALO_SERIAL_PORT = "COM3"
     # Do not require an ESP32 to serve the web API.
     serial_port = os.getenv("HALO_SERIAL_PORT", "").strip()
-    if serial_port:
+    ftm_port = os.getenv("HALO_FTM_PORT", "").strip()
+    if ftm_port:
+        Thread(target=poll_ftm, args=(ftm_port,), daemon=True).start()
+    if serial_port and serial_port.casefold() != ftm_port.casefold():
         Thread(target=start_serial_reader, args=(socketio, serial_port), daemon=True).start()
     socketio.run(app, host="127.0.0.1", port=5000, debug=False)
 
