@@ -1,3 +1,4 @@
+<a id="top"></a>
 <div align="center">
 
 # 🦺 Halo Safety
@@ -71,6 +72,6 @@ Built collaboratively for **natHacks 2026**. See our [contributors](https://gith
 
 <div align="center">
 
-[Back to top](#-halo-safety)
+[Back to top](#top)
 
 </div>
