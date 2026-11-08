@@ -60,6 +60,6 @@ Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` in `frontend/.env.lo
 3. Password reset email and password update work.
 4. A logged-out user cannot read `sensor_events` via Supabase's API.
 5. Users in different organizations do not see each other's records.
-6. The low-poly background moves smoothly and respects reduced motion.
+6. The low-poly background moves smoothly, nearby facets respond to the pointer, and reduced motion is respected.
 
-The background is a **pre-generated SVG** animated with CSS transform only. It has no JS animation loop, Canvas updates, or external animation library.
+The background is a deterministic SVG mesh rendered once in React with slow CSS transform movement. Nearby polygon highlights react to the mouse only during pointer events, without an idle JavaScript animation loop or Canvas.

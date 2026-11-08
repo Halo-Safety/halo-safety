@@ -15,59 +15,79 @@ button,input {font:inherit}
 button {cursor:pointer}
 button:focus-visible,a:focus-visible,input:focus-visible {outline:3px solid #197eaa;outline-offset:3px}
 
-/* Pre-generated vector geometry. Only one CSS transform animates; no frame loop. */
-.mesh-background {position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none;
-  background:linear-gradient(110deg,#23c9bd,#399cbb 55%,#426297)}
-.mesh-background-layer {position:absolute;inset:-5%;background:url('/low-poly-mesh.svg') center / cover no-repeat;
-  animation:mesh-drift 44s ease-in-out infinite alternate;transform:translate3d(0,0,0) scale(1.04)}
-@keyframes mesh-drift {
-  from {transform:translate3d(-1.6%,-1%,0) scale(1.04)}
-  to {transform:translate3d(1.6%,1.1%,0) scale(1.07)}
+
+/* Low-poly geometry stays softly animated without a JavaScript frame loop.
+   Only the translucent facets under the pointer are updated on pointer moves. */
+.mesh-background {position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;
+  background:#a5cbbf;isolation:isolate}
+.mesh-scene{position:absolute;inset:-4%;will-change:transform;transition:transform 140ms ease-out}
+.mesh-artwork{width:100%;height:100%;display:block;transform-origin:center;
+  animation:mesh-breathe 56s ease-in-out infinite alternate;will-change:transform}
+@keyframes mesh-breathe{
+  from{transform:translate3d(-0.6%,-0.4%,0) scale(1.045)}
+  to{transform:translate3d(0.7%,0.6%,0) scale(1.085)}
 }
-.mesh-still .mesh-background-layer {animation:none;transform:scale(1.04)}
+.mesh-raised-facets polygon{opacity:0;transform-box:fill-box;transform-origin:center;
+  transition:opacity 220ms ease-out,transform 140ms ease-out}
+.mesh-still .mesh-artwork{animation:none;transform:scale(1.055)}
+.mesh-still .mesh-scene{transition:none}
+.auth-page,.app-shell,.auth-loading{position:relative;z-index:1}
 @media(prefers-reduced-motion:reduce){
   html{scroll-behavior:auto}
-  .mesh-background-layer{animation:none!important;transform:scale(1.04)!important}
+  .mesh-artwork{animation:none!important;transform:scale(1.05)!important}
+  .mesh-raised-facets polygon{transition:none!important}
+  .mesh-scene{transition:none!important}
   .spin{animation:none!important}
 }
 
-/* Sign-in screen — only product introduction + white form. */
-.auth-page {min-height:100vh;display:grid;grid-template-columns:minmax(0,1fr) minmax(360px,495px);
-  gap:clamp(45px,6vw,126px);align-items:center;max-width:1300px;margin:auto;padding:42px clamp(24px,5.4vw,95px);
-  position:relative}
-.auth-brand{max-width:510px;color:white;text-shadow:0 1px 10px #18507616}
-.auth-brand-name{font-size:clamp(80px,10vw,154px);font-weight:300;line-height:1;letter-spacing:-10px}
-.auth-brand-name span{color:#d0f3f1}
-.auth-brand p{font-size:clamp(17px,1.7vw,23px);line-height:1.55;margin:17px 0 0;font-weight:350;max-width:430px;color:#f5ffff}
-.auth-card{background:#fff;border-radius:28px;box-shadow:0 16px 50px #16385e37;min-height:450px;padding:55px 50px 47px}
-.auth-card-title{margin-bottom:33px}
-.auth-card-title h1{font-size:36px;font-weight:500;letter-spacing:-1.4px;color:#2e526f;margin:0 0 9px}
-.auth-card-title p{color:#748a99;font-size:13px;line-height:1.55;margin:0}
-.auth-field{display:flex;flex-direction:column;gap:9px;margin:20px 0}
-.auth-field label{font-size:14px;color:#36495c;font-weight:600}
-.auth-field>input,.auth-password-wrap input{display:block;width:100%;height:52px;padding:0 16px;
-  background:#f7f9fb;border:1.5px solid #dfe6ed;border-radius:11px;color:#24374f;font-size:15px;outline:none;
+/* Compact sign-in fits on an ordinary laptop viewport without page scrolling. */
+.auth-page{height:100dvh;min-height:510px;display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(340px,448px);
+  gap:clamp(36px,5vw,92px);align-items:center;max-width:1220px;margin:0 auto;
+  padding:clamp(15px,3vh,32px) clamp(24px,5vw,76px)}
+.auth-brand{max-width:480px;color:#234a59;text-shadow:none}
+.auth-brand-name{font-size:clamp(77px,9.6vw,136px);font-weight:360;line-height:1;letter-spacing:-8px}
+.auth-brand-name span{color:#4c869e}
+.auth-brand p{font-size:clamp(16px,1.55vw,20px);line-height:1.5;margin:13px 0 0;
+  font-weight:400;max-width:380px;color:#345e69}
+.auth-card{background:#fff;border-radius:23px;box-shadow:0 18px 52px #3b618041;
+  min-height:0;padding:30px 35px 27px}
+.auth-card-title{margin-bottom:20px}
+.auth-card-title h1{font-size:31px;font-weight:550;letter-spacing:-1.2px;color:#33566e;margin:0}
+.auth-card-title p{color:#748a99;font-size:12px;line-height:1.5;margin:9px 0 0}
+.auth-field{display:flex;flex-direction:column;gap:7px;margin:14px 0}
+.auth-field label{font-size:13px;color:#385267;font-weight:600}
+.auth-field>input,.auth-password-wrap input{display:block;width:100%;height:46px;padding:0 14px;
+  background:#f8fafc;border:1.4px solid #dfe6ed;border-radius:10px;color:#24374f;font-size:14px;outline:none;
   transition:border-color .18s}
-.auth-field input:focus{border-color:#448fac;box-shadow:0 0 0 3px #2e9caf19}
+.auth-field input:focus{border-color:#518aa5;box-shadow:0 0 0 3px #2e9caf19}
 .auth-field input:disabled{color:#9da9b3;cursor:not-allowed}
 .auth-field input::placeholder{color:#9ba9b7}
 .auth-password-wrap{position:relative}
-.auth-password-wrap input{padding-right:48px}
-.auth-eye{position:absolute;right:7px;top:6px;height:40px;width:40px;display:grid;place-items:center;border:0;
+.auth-password-wrap input{padding-right:47px}
+.auth-eye{position:absolute;right:4px;top:3px;height:40px;width:40px;display:grid;place-items:center;border:0;
   border-radius:8px;background:transparent;color:#708498}
 .auth-eye:hover{color:#2d5b7b;background:#e9f1f6}
-.auth-forgot-link{display:block;margin:-2px 0 24px auto;border:0;background:transparent;color:#356d97;font-size:12px;padding:0}
+.auth-forgot-link{display:block;margin:-1px 0 17px auto;border:0;background:transparent;
+  color:#3e7190;font-size:12px;padding:0}
 .auth-forgot-link:hover{text-decoration:underline}
-.auth-submit{width:100%;height:54px;display:flex;justify-content:center;align-items:center;gap:12px;
-  border:0;border-radius:11px;background:#42608c;color:#fff;font-size:15px;font-weight:600;
-  box-shadow:0 4px 11px #385e8c2c;transition:background .15s}
-.auth-submit:hover:not(:disabled){background:#304f7c}
+.auth-submit{width:100%;height:47px;display:flex;justify-content:center;align-items:center;gap:10px;
+  border:0;border-radius:10px;background:#4a6b88;color:#fff;font-size:14px;font-weight:600;
+  box-shadow:0 4px 12px #385e8c23;transition:background .15s}
+.auth-submit:hover:not(:disabled){background:#365876}
 .auth-submit:disabled{opacity:.5;cursor:not-allowed}
-.auth-error{background:#fff1f0;border:1px solid #ffd6d2;border-radius:9px;color:#a83b38;font-size:12px;padding:11px 13px;line-height:1.5}
-.auth-notice{background:#eaf7f2;border:1px solid #cbe8de;border-radius:9px;color:#2b735f;font-size:12px;padding:11px 13px;line-height:1.5}
-.auth-back{display:block;margin:16px auto 0;border:0;background:none;color:#486d91;font-size:13px}
-.auth-loading{min-height:100vh;display:grid;place-items:center;color:white;font-size:15px}
-
+.auth-error{background:#fff1f0;border:1px solid #ffd6d2;border-radius:9px;color:#a83b38;
+  font-size:12px;padding:10px 12px;line-height:1.45}
+.auth-notice{background:#eaf7f2;border:1px solid #cbe8de;border-radius:9px;color:#2b735f;
+  font-size:12px;padding:10px 12px;line-height:1.45}
+.auth-back{display:block;margin:13px auto 0;border:0;background:none;color:#486d91;font-size:13px}
+.auth-loading{min-height:100vh;display:grid;place-items:center;color:#224b5d;font-size:15px}
+@media(max-height:600px) and (min-width:901px){
+  .auth-page{min-height:470px;padding-top:12px;padding-bottom:12px}
+  .auth-card{padding-top:24px;padding-bottom:22px}
+  .auth-card-title{margin-bottom:13px}
+  .auth-field{margin:11px 0}
+}
 /* Application: soft/light workspace. */
 .app-shell{display:flex;min-height:100vh;position:relative;background:rgba(240,247,251,.95)}
 .sidebar{position:sticky;top:0;flex:0 0 235px;height:100vh;display:flex;flex-direction:column;
@@ -172,10 +192,10 @@ tr:hover td{background:#f8fbfc}
   .content-grid{grid-template-columns:1fr}
 }
 @media(max-width:900px){
-  .auth-page{grid-template-columns:1fr;max-width:600px;gap:30px}
+  .auth-page{height:auto;min-height:100dvh;grid-template-columns:1fr;max-width:600px;gap:20px;padding-top:26px;padding-bottom:26px;align-content:center}
   .auth-brand-name{font-size:76px;letter-spacing:-6px}
   .auth-brand p{font-size:17px;margin:7px 0 0}
-  .auth-card{padding:39px 35px 37px;min-height:0}
+  .auth-card{padding:27px 30px 25px;min-height:0}
 }
 @media(max-width:760px){
   .app-shell{display:block}.sidebar{position:relative;height:auto;flex:none;padding:15px 16px 10px}
@@ -191,9 +211,9 @@ tr:hover td{background:#f8fbfc}
   .simulator-frame{min-height:1350px}
 }
 @media(max-width:500px){
-  .auth-page{padding:24px 17px 28px;gap:24px;align-content:center}
+  .auth-page{padding:22px 17px 24px;gap:21px;align-content:center}
   .auth-brand-name{font-size:64px;letter-spacing:-5px}.auth-brand p{font-size:14px}
-  .auth-card{padding:34px 25px;border-radius:21px}
+  .auth-card{padding:24px 24px;border-radius:21px}
   .auth-card-title h1{font-size:30px}
   .breadcrumb span:first-child,.breadcrumb-separator{display:none}
   .metric-label svg{display:none}.nav-count{display:none}

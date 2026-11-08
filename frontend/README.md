@@ -31,7 +31,7 @@ Account creation is administrator/invitation managed (no open sign-up UI). After
 
 ## UI
 
-A light login card sits beside the Halo brand on a turquoise-to-blue geometric SVG. The vector mesh is generated ahead of time, then moves via a single composited CSS transform — no Canvas animation loop or per-frame JavaScript calculations.
+A light login card sits beside the Halo brand on a turquoise-to-blue geometric SVG. The original irregular mesh is generated once at mount as inline SVG. A slow CSS transform moves the whole field, while a small subset of translucent polygons responds to pointer proximity using requestAnimationFrame only when the pointer moves. No Canvas or continuous JS render loop.
 
 The Dashboard has a light workspace theme. The simulator remains the teammate's original standalone iframe, and simulator animations are not stored as real safety incidents.
 

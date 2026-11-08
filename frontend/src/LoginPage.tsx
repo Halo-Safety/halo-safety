@@ -57,9 +57,11 @@ export default function LoginPage({
       <section className="auth-card" aria-labelledby="auth-heading">
         <div className="auth-card-title">
           <h1 id="auth-heading">{heading}</h1>
-          <p>{recoveryMode ? 'Choose a new password for your account.' :
-              forgot ? 'We will email you a password reset link.' :
-              'Welcome to Halo.'}</p>
+          {(recoveryMode || forgot) && (
+            <p>{recoveryMode
+              ? 'Choose a new password for your account.'
+              : 'We will email you a password reset link.'}</p>
+          )}
         </div>
 
         <form onSubmit={(event) => { void submit(event); }}>
