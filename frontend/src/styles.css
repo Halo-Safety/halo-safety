@@ -89,7 +89,7 @@ button:focus-visible,a:focus-visible,input:focus-visible {outline:3px solid #197
   .auth-field{margin:11px 0}
 }
 /* Application: soft/light workspace. */
-.app-shell{display:flex;min-height:100vh;position:relative;background:rgba(240,247,251,.95)}
+.app-shell{display:flex;min-height:100vh;position:relative;background:#f2f7fa}
 .sidebar{position:sticky;top:0;flex:0 0 235px;height:100vh;display:flex;flex-direction:column;
   background:#ffffffea;border-right:1px solid #d8e5ed;padding:33px 16px 20px}
 .brand{display:flex;align-items:center;gap:12px;padding:0 12px;width:max-content}
@@ -117,10 +117,10 @@ button:focus-visible,a:focus-visible,input:focus-visible {outline:3px solid #197
 .api-pill{display:flex;align-items:center;gap:7px;border:1px solid #f1d2c5;border-radius:100px;
   color:#a45b43;background:#fff5ef;padding:8px 10px;font-size:10px}
 .api-pill.online{color:#3a867a;background:#ecf8f2;border-color:#d0e8da}
-.icon-button,.motion-button,.workspace-exit-button{display:inline-flex;align-items:center;justify-content:center;gap:8px;
+.icon-button,.workspace-exit-button{display:inline-flex;align-items:center;justify-content:center;gap:8px;
   min-height:35px;padding:0 10px;border:1px solid #d8e5ec;border-radius:9px;color:#5b7790;background:#fff;font-size:11px}
 .icon-button{width:35px;padding:0}
-.icon-button:hover,.motion-button:hover,.workspace-exit-button:hover{background:#e9f5f8;color:#276d8d}
+.icon-button:hover,.workspace-exit-button:hover{background:#e9f5f8;color:#276d8d}
 .icon-button:disabled{opacity:.5}
 .spin{animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -203,8 +203,8 @@ tr:hover td{background:#f8fbfc}
   .nav-links{flex-direction:row;overflow-x:auto;gap:4px;margin-top:12px}
   .nav-link{font-size:11px;white-space:nowrap;padding:9px 10px}
   .topbar{height:61px;padding:0 17px}.page-content{padding:27px 16px}
-  .motion-button span,.workspace-exit-button span{display:none}
-  .motion-button,.workspace-exit-button{width:35px;padding:0}
+  .workspace-exit-button span{display:none}
+  .workspace-exit-button{width:35px;padding:0}
   .metrics{gap:10px}.metric-card{padding:17px 15px;min-height:130px}
   .metric-value{font-size:33px;margin:10px 0 3px}
   .metric-desc,.metric-label{font-size:10px}

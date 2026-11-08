@@ -9,9 +9,6 @@ export default function Experience() {
   const [user, setUser] = useState<User | null>(null);
   const [initializing, setInitializing] = useState(true);
   const [recoveryMode, setRecoveryMode] = useState(false);
-  const [motionEnabled, setMotionEnabled] = useState(
-    () => !window.matchMedia('(prefers-reduced-motion: reduce)').matches,
-  );
 
   useEffect(() => {
     if (!supabase) {
@@ -55,8 +52,6 @@ export default function Experience() {
     return () => { disposed = true; subscription.unsubscribe(); };
   }, []);
 
-  const toggleMotion = () => setMotionEnabled(enabled => !enabled);
-
   async function signIn(email: string, password: string) {
     if (!supabase) throw new Error('Authentication is not configured.');
     const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -93,14 +88,12 @@ export default function Experience() {
 
   return (
     <>
-      <MeshBackground paused={!motionEnabled} />
+      {!initializing && (!user || recoveryMode) && <MeshBackground paused={false} />}
       {initializing ? (
         <main className="auth-loading" role="status">Loading…</main>
       ) : user && !recoveryMode ? (
         <App
           userEmail={user.email || ''}
-          motionEnabled={motionEnabled}
-          onMotionChange={toggleMotion}
           onExit={signOut}
         />
       ) : (

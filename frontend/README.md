@@ -33,7 +33,7 @@ Account creation is administrator/invitation managed (no open sign-up UI). After
 
 A light login card sits beside the Halo brand on a turquoise-to-blue geometric SVG. The original irregular mesh is generated once at mount as inline SVG. A slow CSS transform moves the whole field, while a small subset of translucent polygons responds to pointer proximity using requestAnimationFrame only when the pointer moves. No Canvas or continuous JS render loop.
 
-The Dashboard has a light workspace theme. The simulator remains the teammate's original standalone iframe, and simulator animations are not stored as real safety incidents.
+The geometric background is mounted only on the sign-in and password-recovery screens. After sign-in, the Dashboard and embedded Simulation use a fixed solid light background with no decorative animation or motion toggle. The simulator remains the teammate's original standalone iframe, and simulator animations are not stored as real safety incidents.
 
 ## Verify build
 

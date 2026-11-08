@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Activity, AlertTriangle, BarChart3, CheckCircle2,
-  Clock3, Database, HardHat, RefreshCw, Route, ShieldCheck, Wifi, WifiOff, Play, Pause, LogOut,
+  Clock3, Database, HardHat, RefreshCw, Route, ShieldCheck, Wifi, WifiOff, LogOut,
 } from 'lucide-react';
 import { getEvents } from './api';
 import { eventType, type SensorEvent } from './types';
@@ -75,13 +75,11 @@ function EventBadge({ type }: { type: string }) {
 }
 
 type AppProps = {
-  motionEnabled: boolean;
-  onMotionChange: () => void;
   onExit: () => Promise<void>;
   userEmail: string;
 };
 
-export default function App({ motionEnabled, onMotionChange, onExit, userEmail }: AppProps) {
+export default function App({ onExit, userEmail }: AppProps) {
   const [events, setEvents] = useState<SensorEvent[]>([]);
   const [apiOnline, setApiOnline] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -155,10 +153,6 @@ export default function App({ motionEnabled, onMotionChange, onExit, userEmail }
               {apiOnline ? <Wifi size={15}/> : <WifiOff size={15}/>}
               {apiOnline ? 'Connected' : 'Unavailable'}
             </span>
-            <button type="button" className="motion-button" aria-pressed={motionEnabled} onClick={onMotionChange} title={motionEnabled ? 'Pause background animation' : 'Resume background animation'}>
-              {motionEnabled ? <Pause size={14}/> : <Play size={14}/>}
-              <span>Motion {motionEnabled ? 'on' : 'off'}</span>
-            </button>
             <button type="button" className="icon-button" onClick={() => { setRefreshing(true); void refresh(); }} title="Refresh data" aria-label="Refresh data" disabled={refreshing}>
               <RefreshCw className={refreshing ? 'spin' : ''} size={18}/>
             </button>
