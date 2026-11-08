@@ -4,46 +4,53 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Halo Blind Spot Simulator</title>
 <style>
-  :root {font:14px 'DM Sans',system-ui,sans-serif;color:#eaedfb;background:#10131f}
+  :root{font:13px 'DM Sans',system-ui,-apple-system,sans-serif;color:#36546b;background:#f4f8fb}
   *{box-sizing:border-box}
-  body{margin:0 auto;max-width:1440px;padding:24px;background:#10131f;color:#eaedfb}
+  body{margin:0 auto;max-width:1440px;padding:18px;background:#f4f8fb;color:#36546b}
   h1,h2,p{margin:0 0 10px}
-  h1{font-size:clamp(24px,3vw,36px);font-weight:650;letter-spacing:-1.15px}
-  h2{font-size:13px;font-weight:750;letter-spacing:.05px}
-  header{margin-bottom:22px}
-  header>p{color:#939bb5;line-height:1.65;font-size:12px}
-  .tag{display:inline-block;margin-bottom:12px;padding:6px 10px;border:1px solid #b6b0ff40;border-radius:999px;background:#8c85d723;color:#bcb5ff;font-size:10px;letter-spacing:1px;text-transform:uppercase;font-weight:700}
-  main{display:grid;grid-template-columns:minmax(0,1fr) 265px;gap:16px}
-  section,aside{background:#1b2030b5;border:1px solid #ffffff1a;border-radius:14px;padding:21px;min-width:0}
-  aside section{border:0;border-bottom:1px solid #ffffff13;border-radius:0;padding:13px 0;background:none}
+  h1{font-size:clamp(22px,3vw,30px);font-weight:600;letter-spacing:-.9px;color:#294760}
+  h2{font-size:12px;font-weight:700;color:#38556e}
+  header{margin-bottom:20px}
+  header>p{color:#8096a7;line-height:1.65;font-size:12px}
+  .tag{display:inline-block;margin-bottom:9px;padding:6px 10px;border:1px solid #d5e7ee;border-radius:999px;background:#e5f3f7;color:#34819b;font-size:10px;letter-spacing:.8px;text-transform:uppercase;font-weight:700}
+  main{display:grid;grid-template-columns:minmax(0,1fr) 245px;gap:14px}
+  section,aside{background:#fff;border:1px solid #e0eaf0;border-radius:13px;padding:19px;min-width:0}
+  aside section{border:0;border-bottom:1px solid #e7eff3;border-radius:0;padding:13px 0;background:none}
+  aside section:first-child{padding-top:0}
   aside section:last-child{border:0}
-  aside p{color:#aab2ca;line-height:1.55}
-  aside li{font-size:11px;line-height:1.5;color:#afb6d0;margin:7px 0}
-  .controls{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:13px 0}
+  aside p{color:#7d92a2;line-height:1.6}
+  aside li{font-size:11px;line-height:1.5;color:#748b9b;margin:7px 0}
+  .controls{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:12px 0}
   fieldset{border:0;padding:0;margin:0;min-width:0}
-  label{font-size:11px;color:#aeb5ce}
+  #setup>.controls{padding-bottom:11px;border-bottom:1px solid #edf2f6}
+  #setup>.controls:last-child{border-bottom:0}
+  label{font-size:11px;color:#6b8495}
   button,input{font:inherit;max-width:100%}
-  button{padding:9px 12px;border:1px solid #b4b4ff3e;border-radius:9px;background:#9d9ced19;color:#e5e2ff;font-size:11px;cursor:pointer;transition:background .2s,border-color .2s}
-  button:hover{background:#9d9ced31;border-color:#bab5ff8a}
-  button[aria-pressed="true"]{background:#ada8ff44;color:#fff;border-color:#aba5ff99}
-  button:disabled{opacity:.35;cursor:not-allowed}
-  input[type="number"]{width:85px;padding:8px 9px;color:#e7e9fd;border:1px solid #ffffff2d;border-radius:8px;background:#0d1220}
-  input[type="file"]{font-size:11px;color:#9da7c3}
-  input[type="range"]{accent-color:#a9a4ff}
-  input[type="checkbox"]{accent-color:#a9a4ff}
-  #worker-path,.worker-route{color:#95c9ff}
-  #vehicle-path,.vehicle-route{color:#e2bb88}
-  svg{display:block;width:100%;max-height:74vh;border:1px solid #56627a;border-radius:12px;background:#f7f9fc;touch-action:none}
-  .map-legend{display:flex;flex-wrap:wrap;gap:9px 16px;margin-top:12px;color:#9da6c3;font-size:10px}
+  button{padding:9px 12px;border:1px solid #d7e5ed;border-radius:9px;background:#f5f9fb;color:#466f89;font-size:11px;font-weight:600;cursor:pointer;transition:background .16s,border-color .16s}
+  button:hover{background:#e7f2f7;border-color:#b2d1df}
+  button[aria-pressed="true"]{background:#dff1f7;color:#236b88;border-color:#94c3d5}
+  button:disabled{opacity:.4;cursor:not-allowed}
+  input[type="number"],input:not([type]){width:85px;padding:8px 9px;color:#395c75;border:1px solid #d5e2ea;border-radius:8px;background:#fff}
+  input#vehicle-name{width:138px}
+  input[type="file"]{font-size:11px;color:#74899b}
+  input[type="range"],input[type="checkbox"]{accent-color:#398dad}
+  #worker-path,.worker-route{color:#256f9d}
+  #vehicle-path,.vehicle-route{color:#a16a36}
+  svg{display:block;width:100%;max-height:74vh;border:1px solid #d5e3ed;border-radius:11px;background:#f7f9fc;touch-action:none}
+  .map-legend{display:flex;flex-wrap:wrap;gap:9px 15px;margin-top:12px;color:#8296a4;font-size:10px}
   .map-legend span::before{content:"";display:inline-block;width:.8em;height:.8em;margin-right:.5em;border-radius:2px;background:var(--swatch)}
   #map[data-reference="true"] #vehicle-body{fill-opacity:.20}
   #map[data-reference="true"] #vehicle-label{fill:#173650}
-  #status{min-height:2.7em;color:#b9c4e4;font-size:11px;line-height:1.6}
-  .warning{color:#ffb2a6!important;font-weight:800}
+  #status{min-height:2.7em;color:#648298;font-size:11px;line-height:1.6}
+  .warning{color:#c66f58!important;font-weight:800}
   ol{padding-left:18px;overflow-wrap:anywhere}
-  #clock{font-size:12px;font-weight:750;color:#d0c9ff;min-width:48px}
-  @media(max-width:880px){main{grid-template-columns:1fr}aside{display:grid;grid-template-columns:1fr 1fr;gap:10px}aside section{border-bottom:0}}
-  @media(max-width:540px){body{padding:14px}section,aside{padding:14px}aside{display:block}aside section{border-bottom:1px solid #ffffff13}}
+  #clock{font-size:12px;font-weight:750;color:#407f9e;min-width:48px}
+  body.is-embedded{max-width:none;padding:0;background:#fff}
+  body.is-embedded>header{display:none}
+  body.is-embedded main>section,body.is-embedded main>aside{border:0;border-radius:0;box-shadow:none}
+  @media(max-width:1000px){main{grid-template-columns:minmax(0,1fr) 205px}}
+  @media(max-width:700px){main{grid-template-columns:1fr}aside{display:grid;grid-template-columns:1fr 1fr;gap:10px}aside section{border-bottom:0}}
+  @media(max-width:460px){body{padding:10px}section,aside{padding:12px}aside{display:block}aside section{border-bottom:1px solid #e7eff3}}
   @media(prefers-reduced-motion:reduce){*,*:before,*:after{transition:none!important}}
 </style>
 <header>
