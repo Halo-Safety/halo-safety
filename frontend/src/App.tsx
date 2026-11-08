@@ -121,7 +121,7 @@ export default function App({ onExit, userEmail }: AppProps) {
         return;
       }
       if (message.kind !== 'event' || (message.event !== 'PROXIMITY_ALERT' && message.event !== 'ALERT_CLEAR')) return;
-      const type = message.event;
+      const type: SimulationEvent['event'] = message.event as SimulationEvent['event'];
       setSimulationActive(type === 'PROXIMITY_ALERT');
       const zone = typeof message.zone === 'string' ? message.zone.slice(0, 120) : null;
       setSimulationEvents(previous => [{
