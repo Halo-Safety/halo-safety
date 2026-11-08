@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { ArrowRight, ClipboardCheck, Database, RefreshCw, Save, ShieldCheck, Truck } from 'lucide-react';
 import {
   listSafetyOrganizations, loadSafetyData, saveAction, saveCase, saveVehicle,
@@ -38,7 +38,7 @@ const blankAction = (): ActionInput => ({
 });
 
 function Field({ label, children, wide = false }: {
-  label: string; children: React.ReactNode; wide?: boolean;
+  label: string; children: ReactNode; wide?: boolean;
 }) {
   return <label className={'safety-form-field' + (wide ? ' wide' : '')}>
     <span>{label}</span>{children}
@@ -47,6 +47,7 @@ function Field({ label, children, wide = false }: {
 
 export default function SafetyRecords({ view }: { view: View }) {
   const [organizations, setOrganizations] = useState<SafetyOrg[]>([]);
+  const loadGeneration = useRef(0);
   const [orgId, setOrgId] = useState('');
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [cases, setCases] = useState<SafetyCase[]>([]);
@@ -81,31 +82,38 @@ export default function SafetyRecords({ view }: { view: View }) {
 
   const reload = useCallback(async () => {
     if (!orgId) return;
+    const generation = ++loadGeneration.current;
     setLoading(true);
     try {
       const result = await loadSafetyData(orgId);
+      if (generation !== loadGeneration.current) return;
       setVehicles(result.vehicles);
       setCases(result.cases);
       setActions(result.actions);
       setError(null);
     } catch (issue) {
+      if (generation !== loadGeneration.current) return;
       setError(issue instanceof Error ? issue.message : 'Unable to load records');
     } finally {
-      setLoading(false);
+      if (generation === loadGeneration.current) setLoading(false);
     }
   }, [orgId]);
 
-  useEffect(() => { void reload(); }, [reload]);
+  useEffect(() => {
+    void reload();
+    return () => { loadGeneration.current += 1; };
+  }, [reload]);
+  useEffect(() => { setFormKind(null); }, [view]);
   const org = organizations.find(item => item.id === orgId);
   const canEdit = org?.role === 'admin' || org?.role === 'manager';
   const selectedVehicle = vehicles.find(item => item.id === selectedVehicleId) || vehicles[0];
-  const selectedCase = cases.find(item => item.id === selectedCaseId) || cases[0];
   const filteredCases = useMemo(() => cases.filter(item => {
     if (filter === 'needs_review') return item.status === 'needs_review' || item.status === 'investigating';
     if (filter === 'reviewed_near_miss') return item.classification === 'reviewed_near_miss';
     if (filter === 'demo') return item.is_demo;
     return true;
   }), [cases, filter]);
+  const selectedCase = filteredCases.find(item => item.id === selectedCaseId) || filteredCases[0];
   const outstanding = actions.filter(item => item.status !== 'completed');
   const overdue = outstanding.filter(item => item.due_date && item.due_date < localDateTime(new Date()).slice(0, 10));
   const verified = cases.filter(item => item.classification === 'reviewed_near_miss' && !item.is_demo).length;
@@ -208,6 +216,7 @@ export default function SafetyRecords({ view }: { view: View }) {
     {organizations.length > 0 && <div className="safety-org-bar">
       <label>Organization
         <select value={orgId} onChange={event => {
+          loadGeneration.current += 1;
           setOrgId(event.target.value);
           setFormKind(null); setSelectedCaseId(null); setSelectedVehicleId(null);
           setCases([]); setVehicles([]); setActions([]); setNotice(null);
