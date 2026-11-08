@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Activity, AlertTriangle, ArrowRight, BarChart3, CheckCircle2, CircleHelp,
-  Clock3, Database, HardHat, RadioTower, RefreshCw, ShieldCheck, Wifi, WifiOff,
+  Clock3, Database, HardHat, RadioTower, RefreshCw, Route, ShieldCheck, Wifi, WifiOff,
 } from 'lucide-react';
-import { getEvents, getStatus, sendDemoAlert, isDemoMode } from './api';
+import { getEvents, getStatus, sendDemoAlert, isDemoMode, appendSimulationEvent } from './api';
 import { eventType, type SensorEvent } from './types';
 
 const POLL_INTERVAL_MS = 3000;
@@ -82,6 +82,14 @@ export default function App() {
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [sendingDemo, setSendingDemo] = useState(false);
+  const [simulationView, setSimulationView] = useState(() => window.location.hash === '#simulation');
+  const simulatorFrame = useRef<HTMLIFrameElement | null>(null);
+
+  useEffect(() => {
+    const onHashChange = () => setSimulationView(window.location.hash === '#simulation');
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
 
   const refresh = useCallback(async () => {
     try {
@@ -102,6 +110,22 @@ export default function App() {
     void refresh();
     const interval = window.setInterval(() => void refresh(), POLL_INTERVAL_MS);
     return () => window.clearInterval(interval);
+  }, [refresh]);
+
+  useEffect(() => {
+    function onSimulationMessage(message: MessageEvent) {
+      if (!isDemoMode || message.origin !== window.location.origin ||
+          message.source !== simulatorFrame.current?.contentWindow) return;
+      const data: unknown = message.data;
+      if (!data || typeof data !== 'object' || !('source' in data) || !('event' in data)) return;
+      if (data.source !== 'halo-simulator') return;
+      if (data.event !== 'PROXIMITY_ALERT' && data.event !== 'ALERT_CLEAR') return;
+      const zone = 'zone' in data && typeof data.zone === 'string' ? data.zone : undefined;
+      appendSimulationEvent(data.event, zone);
+      void refresh();
+    }
+    window.addEventListener('message', onSimulationMessage);
+    return () => window.removeEventListener('message', onSimulationMessage);
   }, [refresh]);
 
   const ordered = useMemo(() => sortedEvents(events), [events]);
@@ -136,9 +160,10 @@ export default function App() {
         </a>
         <div className="navigation-label">WORKSPACE</div>
         <nav className="nav-links" aria-label="Main navigation">
-          <a className="nav-link selected" href="#overview"><BarChart3 size={18} /> Overview</a>
+          <a className={"nav-link" + (!simulationView ? " selected" : "")} href="#overview"><BarChart3 size={18} /> Overview</a>
           <a className="nav-link" href="#alerts"><AlertTriangle size={18} /> Active alerts <span className="nav-count">{active.length}</span></a>
           <a className="nav-link" href="#history"><Database size={18} /> Event history</a>
+          <a className={"nav-link" + (simulationView ? " selected" : "")} href="#simulation"><Route size={18} /> Simulation</a>
         </nav>
         <div className="sidebar-bottom">
           <div className="sidebar-note"><CircleHelp size={17} /><span>Sensor alerts are not confirmed near misses. Events require review.</span></div>
@@ -148,7 +173,7 @@ export default function App() {
 
       <main className="main-content" id="overview">
         <header className="topbar">
-          <div className="breadcrumb"><span>Workspace</span><ArrowRight size={14}/><strong>Overview</strong></div>
+          <div className="breadcrumb"><span>Workspace</span><ArrowRight size={14}/><strong>{simulationView ? "Simulation" : "Overview"}</strong></div>
           <div className="topbar-right">
             <span className={'api-pill ' + (isDemoMode ? 'demo' : apiOnline ? 'online' : 'offline')}>
               {isDemoMode ? <RadioTower size={15}/> : apiOnline ? <Wifi size={15}/> : <WifiOff size={15}/>}
@@ -161,6 +186,31 @@ export default function App() {
         </header>
 
         <div className="page-content">
+          {simulationView ? (
+            <section className="simulator-page" aria-labelledby="simulation-heading">
+              <div className="eyebrow"><span className="eyebrow-line" /> SAFETY SCENARIO LAB</div>
+              <h1 id="simulation-heading">Blind spot simulation</h1>
+              <p className="simulator-intro">Plan worker and vehicle routes, configure blind zones, and test proximity scenarios. This is a simulation, not a live safety monitor.</p>
+              <div className="simulator-meta">
+                <span>{isDemoMode ? 'Demo events from this simulation appear in Overview in this browser.' : 'Simulation is standalone; API event ingestion is not enabled.'}</span>
+                <span>Source: teammate's latest simulator in main (PR #5)</span>
+              </div>
+              <div className="sample-diagrams">
+                <span>Sample vehicle diagrams:</span>
+                <a href="/simulator/vehicle1.png" target="_blank" rel="noreferrer">Vehicle 1</a>
+                <a href="/simulator/vehicle-2.png" target="_blank" rel="noreferrer">Vehicle 2</a>
+              </div>
+              <iframe
+                ref={simulatorFrame}
+                title="Halo blind spot scenario simulator"
+                className="simulator-frame"
+                src="/simulator/index.html"
+                loading="eager"
+              />
+              <p className="simulator-caption">A simulation alert is logged only when the overall warning switches on or off, not on every animation frame. These records are illustrative and are not verified near misses.</p>
+            </section>
+          ) : (
+            <>
           <div className="page-heading">
             <div>
               <div className="eyebrow"><span className="eyebrow-line" /> OPERATIONS INTELLIGENCE</div>
@@ -276,6 +326,8 @@ export default function App() {
             </div>
           </section>
           <footer className="footer"><span><ShieldCheck size={15}/> Halo Safety · Operational prototype</span><span>{lastUpdate ? (isDemoMode ? 'Demo refreshed ' : 'Last synced ') + lastUpdate.toLocaleTimeString() : 'Waiting for first sync'}</span></footer>
+            </>
+          )}
         </div>
       </main>
     </div>

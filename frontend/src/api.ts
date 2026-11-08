@@ -108,3 +108,23 @@ export async function sendDemoAlert(): Promise<{ success: boolean; message: stri
     headers: { 'Content-Type': 'application/json' },
   });
 }
+
+/** Append verified same-origin simulator events to the browser-only demo store. */
+export function appendSimulationEvent(
+  event: 'PROXIMITY_ALERT' | 'ALERT_CLEAR',
+  zone?: string,
+): void {
+  if (!isDemoMode) return;
+  const existing = readDemoEvents();
+  const nextId = Math.max(0, ...existing.map(item => item.id ?? 0)) + 1;
+  existing.push({
+    id: nextId,
+    worker_id: 'SIM_WORKER_01',
+    machine_id: 'SIM_LOADER_01',
+    event_type: event,
+    rssi: null,
+    zone,
+    timestamp: new Date().toISOString(),
+  });
+  writeDemoEvents(existing);
+}

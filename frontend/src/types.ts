@@ -6,6 +6,7 @@ export interface SensorEvent {
   event_type?: string;
   event?: string;
   timestamp?: string;
+  zone?: string;
 }
 
 export interface BackendStatus {
