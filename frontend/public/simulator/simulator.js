@@ -19,13 +19,35 @@ let worker = { x: 190, y: 240 };
 const activeEvents = new Map();
 let reportedWarningActive = false;
 
+// The simulator stays browser-only. Its parent can display a separate
+// sandbox timeline, but this bridge does not write to the incident database.
+const embedded = window.parent !== window;
+if (embedded) document.body.classList.add('is-embedded');
+
 function notifyDashboard(active, zone) {
-  if (window.parent === window) return;
+  if (!embedded) return;
   window.parent.postMessage({
     source: 'halo-simulator',
+    kind: 'event',
     event: active ? 'PROXIMITY_ALERT' : 'ALERT_CLEAR',
     zone: zone || null,
   }, window.location.origin);
+}
+
+function reportHeight() {
+  if (!embedded) return;
+  window.parent.postMessage({
+    source: 'halo-simulator',
+    kind: 'resize',
+    height: Math.ceil(document.documentElement.scrollHeight),
+  }, window.location.origin);
+}
+
+if (embedded && typeof ResizeObserver !== 'undefined') {
+  const observer = new ResizeObserver(reportHeight);
+  observer.observe(document.body);
+  window.addEventListener('load', reportHeight);
+  window.addEventListener('resize', reportHeight);
 }
 const clearanceEvent = { name: 'Vehicle clearance zone' };
 let clearance = 0.5;
