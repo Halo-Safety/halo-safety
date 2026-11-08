@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Activity, AlertTriangle, ArrowRight, BarChart3, CheckCircle2, CircleHelp,
-  Clock3, Database, HardHat, RadioTower, RefreshCw, Route, ShieldCheck, Wifi, WifiOff,
+  Clock3, Database, HardHat, RadioTower, RefreshCw, Route, ShieldCheck, Wifi, WifiOff, Play, Pause, ArrowUpRight, Sparkles,
 } from 'lucide-react';
 import { getEvents, getStatus, sendDemoAlert, isDemoMode, appendSimulationEvent } from './api';
 import { eventType, type SensorEvent } from './types';
@@ -82,6 +82,9 @@ export default function App() {
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [sendingDemo, setSendingDemo] = useState(false);
+  const [motionEnabled, setMotionEnabled] = useState(() =>
+    !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  );
   const [simulationView, setSimulationView] = useState(() => window.location.hash === '#simulation');
   const simulatorFrame = useRef<HTMLIFrameElement | null>(null);
 
@@ -152,13 +155,20 @@ export default function App() {
   }
 
   return (
-    <div className="app-shell">
+    <div className={"app-shell" + (motionEnabled ? "" : " motion-paused")}>
+      <div className="ambient-backdrop" aria-hidden="true">
+        <div className="ambient-aurora aurora-one" />
+        <div className="ambient-aurora aurora-two" />
+        <div className="ambient-aurora aurora-three" />
+        <div className="ambient-grid" />
+        <div className="ambient-vignette" />
+      </div>
       <aside className="sidebar">
         <a className="brand" href="#overview" aria-label="Halo dashboard">
-          <span className="brand-symbol"><ShieldCheck size={24} strokeWidth={2.2} /></span>
-          <span><strong>HALO</strong><small>SAFETY PLATFORM</small></span>
+          <span className="brand-symbol"><ShieldCheck size={23} strokeWidth={1.65} /></span>
+          <span><strong>halo<span className="brand-period">.</span></strong><small>SAFETY INTELLIGENCE</small></span>
         </a>
-        <div className="navigation-label">WORKSPACE</div>
+        <div className="navigation-label">WORKSPACE <span>01 — 03</span></div>
         <nav className="nav-links" aria-label="Main navigation">
           <a className={"nav-link" + (!simulationView ? " selected" : "")} href="#overview"><BarChart3 size={18} /> Overview</a>
           <a className="nav-link" href="#alerts"><AlertTriangle size={18} /> Active alerts <span className="nav-count">{active.length}</span></a>
@@ -166,19 +176,23 @@ export default function App() {
           <a className={"nav-link" + (simulationView ? " selected" : "")} href="#simulation"><Route size={18} /> Simulation</a>
         </nav>
         <div className="sidebar-bottom">
-          <div className="sidebar-note"><CircleHelp size={17} /><span>Sensor alerts are not confirmed near misses. Events require review.</span></div>
-          <div className="sidebar-version">HALO · Hackathon prototype</div>
+          <div className="sidebar-note"><span className="sidebar-note-icon"><CircleHelp size={16} /></span><span>Sensor alerts are observations, not confirmed near misses.</span></div>
+          <div className="sidebar-version"><span className="sidebar-version-dot" /> HALO / PROTOTYPE</div>
         </div>
       </aside>
 
       <main className="main-content" id="overview">
         <header className="topbar">
-          <div className="breadcrumb"><span>Workspace</span><ArrowRight size={14}/><strong>{simulationView ? "Simulation" : "Overview"}</strong></div>
+          <div className="breadcrumb"><span>HALO</span><span className="breadcrumb-separator">/</span><strong>{simulationView ? "Scenario lab" : "Overview"}</strong></div>
           <div className="topbar-right">
             <span className={'api-pill ' + (isDemoMode ? 'demo' : apiOnline ? 'online' : 'offline')}>
               {isDemoMode ? <RadioTower size={15}/> : apiOnline ? <Wifi size={15}/> : <WifiOff size={15}/>}
               {isDemoMode ? 'Demo mode' : apiOnline ? 'API connected' : 'API unavailable'}
             </span>
+            <button type="button" className="motion-button" aria-pressed={motionEnabled} onClick={() => setMotionEnabled(enabled => !enabled)} title={motionEnabled ? 'Pause background animation' : 'Resume background animation'}>
+              {motionEnabled ? <Pause size={14}/> : <Play size={14}/>}
+              <span>Motion {motionEnabled ? 'on' : 'off'}</span>
+            </button>
             <button type="button" className="icon-button" onClick={() => { setRefreshing(true); void refresh(); }} title="Refresh data" aria-label="Refresh data" disabled={refreshing}>
               <RefreshCw className={refreshing ? 'spin' : ''} size={18}/>
             </button>
@@ -188,9 +202,9 @@ export default function App() {
         <div className="page-content">
           {simulationView ? (
             <section className="simulator-page" aria-labelledby="simulation-heading">
-              <div className="eyebrow"><span className="eyebrow-line" /> SAFETY SCENARIO LAB</div>
-              <h1 id="simulation-heading">Blind spot simulation</h1>
-              <p className="simulator-intro">Plan worker and vehicle routes, configure blind zones, and test proximity scenarios. This is a simulation, not a live safety monitor.</p>
+              <div className="eyebrow"><span className="eyebrow-line" /> SCENARIO LAB / 02</div>
+              <h1 id="simulation-heading" className="display-heading">Safety, <span>simulated.</span></h1>
+              <p className="simulator-intro">Explore how worker and vehicle movements intersect with blind spots. Set routes, tune speeds and review simulated warnings.</p>
               <div className="simulator-meta">
                 <span>{isDemoMode ? 'Demo events from this simulation appear in Overview in this browser.' : 'Simulation is standalone; API event ingestion is not enabled.'}</span>
                 <span>Source: teammate's latest simulator in main (PR #5)</span>
@@ -213,9 +227,9 @@ export default function App() {
             <>
           <div className="page-heading">
             <div>
-              <div className="eyebrow"><span className="eyebrow-line" /> OPERATIONS INTELLIGENCE</div>
-              <h1>Safety overview</h1>
-              <p>Monitor proximity events and review activity across your equipment.</p>
+              <div className="eyebrow"><span className="eyebrow-line" /> WORKSPACE / LIVE OVERVIEW</div>
+              <h1 className="display-heading">Safety, <span>in focus.</span></h1>
+              <p>Turn equipment signals into a clearer picture of what needs attention.</p>
             </div>
             {demoEnabled && <button type="button" className="primary-button" onClick={() => void generateDemo()} disabled={sendingDemo || (!isDemoMode && !apiOnline)}>
               <RadioTower size={17} /> {sendingDemo ? 'Sending...' : 'Generate demo alert'}
@@ -233,22 +247,22 @@ export default function App() {
 
           <section className="metrics" aria-label="Event statistics">
             <div className="metric-card">
-              <div className="metric-label">Proximity alerts <Activity size={19}/></div>
+              <div className="metric-label">Recorded signals <Activity size={18}/></div>
               <div className="metric-value">{totalAlerts}</div>
               <div className="metric-desc">Recorded sensor triggers</div>
             </div>
             <div className="metric-card">
-              <div className="metric-label">Currently active <AlertTriangle size={19}/></div>
+              <div className="metric-label">Active warnings <AlertTriangle size={18}/></div>
               <div className="metric-value danger-text">{active.length}</div>
               <div className="metric-desc">Uncleared worker–machine pairs</div>
             </div>
             <div className="metric-card">
-              <div className="metric-label">Alerts today <Clock3 size={19}/></div>
+              <div className="metric-label">Signals today <Clock3 size={18}/></div>
               <div className="metric-value">{todayAlerts}</div>
               <div className="metric-desc">Based on local calendar day</div>
             </div>
             <div className="metric-card">
-              <div className="metric-label">Machines in history <HardHat size={19}/></div>
+              <div className="metric-label">Machines observed <HardHat size={18}/></div>
               <div className="metric-value">{machines}</div>
               <div className="metric-desc">Unique reported machine IDs</div>
             </div>
@@ -257,7 +271,7 @@ export default function App() {
           <div className="content-grid">
             <section className="panel trend-panel">
               <div className="panel-header">
-                <div><div className="panel-kicker">ACTIVITY</div><h2>Proximity events</h2></div>
+                <div><div className="panel-kicker">TRENDS / 7 DAYS</div><h2>Signal activity</h2></div>
                 <span className="subtle-tag">Last 7 days</span>
               </div>
               <div className="chart-wrap">
@@ -278,7 +292,7 @@ export default function App() {
 
             <section className="panel alerts-panel" id="alerts">
               <div className="panel-header">
-                <div><div className="panel-kicker">CURRENT STATUS</div><h2>Active alerts</h2></div>
+                <div><div className="panel-kicker">ATTENTION / NOW</div><h2>Active warnings</h2></div>
                 <span className={'status-counter ' + (active.length ? 'warning' : '')}>{active.length} active</span>
               </div>
               {active.length === 0 ? (
@@ -304,7 +318,7 @@ export default function App() {
 
           <section className="panel history-panel" id="history">
             <div className="panel-header">
-              <div><div className="panel-kicker">AUDIT TRAIL</div><h2>Recent event history</h2></div>
+              <div><div className="panel-kicker">ACTIVITY LOG / RECENT</div><h2>Event history</h2></div>
               <span className="subtle-tag">{events.length} records</span>
             </div>
             <div className="table-scroller">
@@ -325,7 +339,7 @@ export default function App() {
               {ordered.length === 0 && <div className="empty-table">{isDemoMode ? 'No demo events. Generate a simulated alert to start.' : 'No events recorded yet. Start the Flask backend and submit a device event to populate this table.'}</div>}
             </div>
           </section>
-          <footer className="footer"><span><ShieldCheck size={15}/> Halo Safety · Operational prototype</span><span>{lastUpdate ? (isDemoMode ? 'Demo refreshed ' : 'Last synced ') + lastUpdate.toLocaleTimeString() : 'Waiting for first sync'}</span></footer>
+          <footer className="footer"><span><ShieldCheck size={15}/> HALO — SAFETY INTELLIGENCE <span className="footer-separator">/</span> PROTOTYPE</span><span>{lastUpdate ? (isDemoMode ? 'Demo refreshed ' : 'Last synced ') + lastUpdate.toLocaleTimeString() : 'Waiting for first sync'}</span></footer>
             </>
           )}
         </div>

@@ -83,3 +83,7 @@ The `Simulation` link in the React sidebar opens the teammate's browser-based bl
 - In browser Demo Mode only, alarm on/off transitions post a same-origin message to React and append `SIM_WORKER_01` proximity events to the existing browser-local demo history.
 
 The original simulator at `halo_nat/Halo-Simulator/Halo-Simulator/` remains unchanged. Upstream changes there must be deliberately synchronized with the public copy; this is an integration snapshot. For real server-stored incidents, implement authenticated API ingestion separately. Do not treat animated intersections as real near misses.
+
+## Visual design: Halo Aurora
+The React shell uses an original minimalist dark-glass style with a low-cost CSS-only animated aurora and subtle grid. The motion toggle in the top bar pauses the background. Browser `prefers-reduced-motion` disables decorative motion by default.
+The simulator remains the teammate's existing iframe/geometry implementation; only its presentation styles changed. No external images, shaders or animation dependencies are required.
