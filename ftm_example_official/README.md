@@ -3,6 +3,21 @@
 
 # FTM Example
 
+## Halo vehicle anchors
+
+In the ESP-IDF terminal, run `idf.py menuconfig`. Open **Example Configuration → Halo boot role**, select the role for the board you are about to flash, and save. If the menu is missing, enable **FTM Responder support** under **Component config → Wi-Fi** first.
+
+| Role | SSID |
+| --- | --- |
+| Vehicle front | `HaloFront` |
+| Vehicle rear left | `HaloRearL` |
+| Vehicle rear right | `HaloRearR` |
+| Worker / manual console | No automatic hotspot |
+
+Flash the connected board with `idf.py -p COMx flash`, using its actual COM port. Label it, change the boot role for the next board, then flash that board. The selected role is built into each board's firmware and starts again after a reset. The worker can keep using the existing firmware or use **Worker / manual console** if reflashed.
+
+After powering all three anchors, run `scan` on the worker. Each Halo SSID should show as an **FTM Responder**. Test each with `ftm -I -s HaloFront`, `ftm -I -s HaloRearL`, and `ftm -I -s HaloRearR`. The demo hotspot password is `halo-demo123`; the worker can range without joining the hotspot.
+
 (See the README.md file in the upper level 'examples' directory for more information about examples.)
 
 ## Introduction

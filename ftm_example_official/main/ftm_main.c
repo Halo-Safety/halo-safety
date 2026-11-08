@@ -465,8 +465,8 @@ static bool wifi_cmd_ap_set(const char* ssid, const char* pass, uint8_t channel,
     }
     g_ap_config.ap.channel = channel;
     ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_AP, &g_ap_config));
-    ESP_LOGI(TAG_AP, "Starting SoftAP with FTM Responder support, SSID - %s, Password - %s, Primary Channel - %d, Bandwidth - %dMHz",
-                        ap_args.ssid->sval[0], ap_args.password->sval[0], channel, bw);
+    ESP_LOGI(TAG_AP, "Starting SoftAP with FTM Responder support, SSID - %s, Primary Channel - %d, Bandwidth - %dMHz",
+                        ssid, channel, bw);
 
     return true;
 }
@@ -773,6 +773,13 @@ void app_main(void)
     ESP_ERROR_CHECK( ret );
 
     initialise_wifi();
+
+    if (CONFIG_HALO_ANCHOR_SSID[0] != '\0') {
+        if (!wifi_cmd_ap_set(CONFIG_HALO_ANCHOR_SSID, "halo-demo123",
+                             DEFAULT_AP_CHANNEL, DEFAULT_AP_BANDWIDTH)) {
+            ESP_LOGE(TAG_AP, "Failed to start Halo anchor %s", CONFIG_HALO_ANCHOR_SSID);
+        }
+    }
 
     esp_console_repl_t *repl = NULL;
     esp_console_repl_config_t repl_config = ESP_CONSOLE_REPL_CONFIG_DEFAULT();

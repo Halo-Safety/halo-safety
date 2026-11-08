@@ -1,5 +1,30 @@
 menu "Example Configuration"
 
+    choice HALO_BOOT_ROLE
+        prompt "Halo boot role"
+        default HALO_ROLE_WORKER
+        depends on ESP_WIFI_FTM_RESPONDER_SUPPORT
+
+        config HALO_ROLE_WORKER
+            bool "Worker / manual console"
+
+        config HALO_ROLE_FRONT
+            bool "Vehicle front (HaloFront)"
+
+        config HALO_ROLE_REAR_LEFT
+            bool "Vehicle rear left (HaloRearL)"
+
+        config HALO_ROLE_REAR_RIGHT
+            bool "Vehicle rear right (HaloRearR)"
+    endchoice
+
+    config HALO_ANCHOR_SSID
+        string
+        default "HaloFront" if HALO_ROLE_FRONT
+        default "HaloRearL" if HALO_ROLE_REAR_LEFT
+        default "HaloRearR" if HALO_ROLE_REAR_RIGHT
+        default ""
+
     config ESP_FTM_REPORT_LOG_ENABLE
         bool "FTM Report logging"
         default n

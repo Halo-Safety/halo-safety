@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Halo Worker Locator</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: auto; max-width: 1050px; padding: 24px; font: 16px system-ui; color: #182b40; background: #edf2f7; }
+  h1,h2 { margin: 0 0 .55em; } h2 { font-size: 1.1rem; }
+  main { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  section { background: #fff; border-radius: 12px; padding: 16px; min-width: 0; }
+  table { border-collapse: collapse; width: 100%; }
+  th,td { padding: 6px 3px; text-align: left; font-size: .86rem; }
+  input[type=number] { width: 100%; min-width: 45px; padding: 5px; }
+  #error { width: 85px; }
+  svg { display: block; width: 100%; background: #f6f9fc; border-radius: 8px; }
+  .controls { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin: 12px 0; }
+  #status { font-weight: 650; }
+  .hint { color: #465c70; font-size: .92rem; }
+  @media (max-width: 780px) { main { grid-template-columns: 1fr; } body { padding: 12px; } }
+</style>
+<h1>Halo Worker Locator</h1>
+<p>Live FTM ranges and a top-down estimate relative to the vehicle. Positive X is right. Positive Y is forward.</p>
+<main>
+  <section aria-labelledby="map-title">
+    <h2 id="map-title">Vehicle-relative map</h2>
+    <svg id="map" viewBox="0 0 480 380" role="img" aria-label="Anchor locations and estimated worker position"></svg>
+    <p id="status" role="status">Waiting for readings.</p>
+    <p id="detail" class="hint"></p>
+    <p class="hint">Blue dots mark the anchors. A solid orange marker is the worker estimate. A dashed marker is a rough estimate and can be far from the worker.</p>
+  </section>
+  <section aria-labelledby="setup-title">
+    <h2 id="setup-title">Anchor setup</h2>
+    <p class="hint">The starting coordinates illustrate a triangle with approximately 5 cm sides. Replace them with measurements between your actual antennas, using rear-left as the origin.</p>
+    <div class="controls">
+      <label><input id="live" type="checkbox" checked> Live serial readings</label>
+      <label><input id="show-rough" type="checkbox"> Show rough estimate</label>
+      <button type="button" id="sample">Try sample readings</button>
+    </div>
+    <table>
+      <thead><tr><th>Anchor</th><th>X (m)</th><th>Y (m)</th><th>Bias (m)</th><th>Range (m)</th></tr></thead>
+      <tbody>
+      {% for anchor in anchors %}
+      <tr data-anchor="{{ anchor }}">
+        <th scope="row">{{ anchor }}</th>
+        <td><input class="x" aria-label="{{ anchor }} X" type="number" step="0.001" min="-100" max="100" value="{{ [0.025, 0, 0.05][loop.index0] }}"></td>
+        <td><input class="y" aria-label="{{ anchor }} Y" type="number" step="0.001" min="-100" max="100" value="{{ [0.0433, 0, 0][loop.index0] }}"></td>
+        <td><input class="bias" aria-label="{{ anchor }} bias" type="number" step="0.01" min="-100" max="100" value="0"></td>
+        <td><input class="range" aria-label="{{ anchor }} range" type="number" step="any" min="0" max="1000" readonly></td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    <p class="hint">Bias is the amount the raw reading overstates the tape measurement. Halo subtracts it.</p>
+    <label for="error">Estimated range error (m)</label>
+    <input id="error" type="number" min="0.001" max="10" step="0.001" value="0.100">
+    <p class="hint">Replace the illustrative error with a value from repeated tests. A 5 cm mounting triangle may yield ranges without a usable position.</p>
+  </section>
+</main>
+<script>
+const get = id => document.getElementById(id);
+const rows = [...document.querySelectorAll('tbody tr')];
+const ranges = rows.map(row => row.querySelector('.range'));
+const live = get('live');
+let requestId = 0;
+let serialStatus = 'Waiting for a complete set of ranges.';
+
+function svg(tag, attributes, label) {
+  const element = document.createElementNS('http://www.w3.org/2000/svg', tag);
+  for (const [key, value] of Object.entries(attributes)) element.setAttribute(key, value);
+  if (label) element.textContent = label;
+  get('map').append(element);
+}
+
+function anchors() {
+  return rows.map(row => Object.fromEntries(['x','y','bias','range'].map(key =>
+    [key, row.querySelector('.' + key).valueAsNumber])));
+}
+
+function draw(positions, worker) {
+  get('map').replaceChildren();
+  if (positions.some(point => !Number.isFinite(point.x) || !Number.isFinite(point.y))) return;
+  const points = worker ? [...positions, worker] : positions;
+  const x = points.map(p => p.x);
+  const y = points.map(p => p.y);
+  const minX = Math.min(...x), maxX = Math.max(...x), minY = Math.min(...y), maxY = Math.max(...y);
+  const scale = Math.min(355 / Math.max(.1, maxX - minX), 245 / Math.max(.1, maxY - minY));
+  const sx = v => 240 + (v - (minX + maxX) / 2) * scale;
+  const sy = v => 185 - (v - (minY + maxY) / 2) * scale;
+  svg('polygon', {points: positions.map(p => sx(p.x) + ',' + sy(p.y)).join(' '),
+    fill: '#dceafb', stroke: '#31608d', 'stroke-dasharray': '6 4'});
+  positions.forEach((p, i) => {
+    svg('circle', {cx:sx(p.x),cy:sy(p.y),r:6,fill:'#165b9b'});
+    svg('text', {x:sx(p.x),y:sy(p.y)+(i === 0 ? -13 : 22),'text-anchor':'middle',fill:'#24435d'},
+      ['Front','Rear left','Rear right'][i]);
+  });
+  if (worker) {
+    const x = sx(worker.x);
+    const y = sy(worker.y);
+    const rough = !worker.reliable;
+    svg('circle', {cx:x,cy:y,r:13,fill:rough?'#fff4dd':'#b85a10',stroke:'#914107',
+      'stroke-width':3,'stroke-dasharray':rough?'4 3':'none'});
+    svg('text', {x,y:y-20,'text-anchor':'middle',fill:'#783e17','font-weight':750,
+      stroke:'#f6f9fc','stroke-width':4,'paint-order':'stroke'},
+      rough ? 'Worker? Rough estimate' : 'Worker');
+  }
+  const unit = 10 ** Math.floor(Math.log10(110 / scale));
+  svg('line', {x1:20,y1:344,x2:20+unit*scale,y2:344,stroke:'#24435d','stroke-width':2});
+  svg('text', {x:20,y:366,fill:'#24435d'}, unit.toPrecision(1) + ' m');
+}
+
+async function refreshEstimate() {
+  const id = ++requestId;
+  const values = anchors();
+  get('detail').textContent = live.checked ? serialStatus : 'Manual inputs. These are not live readings.';
+  if (values.some(value => !Number.isFinite(value.range))) {
+    draw(values);
+    get('status').textContent = 'Waiting for three ranges.';
+    return;
+  }
+  try {
+    const response = await fetch('/api/locator/estimate', {method:'POST',
+      headers:{'Content-Type':'application/json'}, body:JSON.stringify({anchors:values,error:get('error').valueAsNumber})});
+    const result = await response.json();
+    if (id !== requestId) return;
+    if (!response.ok) {
+      draw(values);
+      get('status').textContent = result.error;
+      return;
+    }
+    const source = live.checked ? '' : 'Sample/manual: ';
+    get('status').textContent = result.reliable
+      ? source + 'Estimated position (' + result.x.toFixed(2) + ', ' + result.y.toFixed(2) + ') m'
+      : source + (get('show-rough').checked
+        ? 'Position uncertain. Showing a rough estimate.'
+        : 'Position uncertain. Enable Show rough estimate to inspect the result.');
+    get('detail').textContent += ' Range mismatch ' + result.residual.toFixed(2)
+      + ' m · position sensitivity ' + result.spread.toFixed(2) + ' m.';
+    draw(values, result.reliable || get('show-rough').checked ? result : null);
+  } catch {
+    if (id === requestId) {
+      draw(values);
+      get('status').textContent = 'Could not reach the locator server.';
+    }
+  }
+}
+
+function changeSource() {
+  ranges.forEach(input => { input.readOnly = live.checked; input.value = ''; });
+  refreshEstimate();
+}
+live.onchange = changeSource;
+get('show-rough').onchange = refreshEstimate;
+get('sample').onclick = () => {
+  live.checked = false;
+  changeSource();
+  rows.forEach((row, index) => {
+    const x = [0.025, 0, 0.05][index], y = [0.0433, 0, 0][index];
+    row.querySelector('.x').value = x;
+    row.querySelector('.y').value = y;
+    row.querySelector('.bias').value = 0;
+    ranges[index].value = Math.hypot(.12 - x, -.22 - y).toFixed(3);
+  });
+  get('error').value = '0.010';
+  refreshEstimate();
+};
+document.querySelectorAll('input[type=number]').forEach(input => input.addEventListener('change',refreshEstimate));
+async function poll() {
+  if (live.checked) {
+    try {
+      const response = await fetch('/api/locator/ranges', {cache:'no-store'});
+      const snapshot = await response.json();
+      if (live.checked) {
+        serialStatus = snapshot.status + (snapshot.ranges ? ' · oldest reading ' + snapshot.age_seconds.toFixed(1) + ' s ago.' : '');
+        rows.forEach((row, i) => { ranges[i].value = snapshot.ranges?.[row.dataset.anchor] ?? ''; });
+        await refreshEstimate();
+      }
+    } catch {
+      if (live.checked) {
+        serialStatus = 'Could not reach the locator server.';
+        ranges.forEach(input => { input.value = ''; });
+        await refreshEstimate();
+      }
+    }
+  }
+  setTimeout(poll, 2000);
+}
+refreshEstimate();
+poll();
+</script>
+</html>
