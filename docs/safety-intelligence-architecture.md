@@ -1,6 +1,6 @@
 # Halo Safety Intelligence — proposed architecture
 
-Status: **design proposal + browser-only demonstration**, not a deployed production incident-management system.
+Status: **partially implemented**. Manual vehicle, case and action persistence is in the PR; raw observations, automatic encounter generation and verified analysis remain a design proposal.
 
 ## Product goal
 
@@ -12,6 +12,37 @@ Answer operational questions that matter to a safety manager:
 - Did the risk rate change **per unit of operating exposure** after the action, and was detection coverage comparable?
 
 A warning does **not** automatically become a verified near miss. An equipment fault is not a clear/safe state.
+
+## Current implementation: persistence layer (same PR)
+
+This proposal now has a first manually managed Supabase implementation:
+
+- SQL migration: [supabase/migrations/20261108_safety_workflows.sql](../supabase/migrations/20261108_safety_workflows.sql)
+- Frontend adapter: [frontend/src/safetyApi.ts](../frontend/src/safetyApi.ts)
+- Editable organization UI: [frontend/src/SafetyRecords.tsx](../frontend/src/SafetyRecords.tsx)
+- Separate original fictional walkthrough: [frontend/src/demoSafetyData.ts](../frontend/src/demoSafetyData.ts)
+
+**Apply this migration in the existing Supabase project's SQL Editor** after the original \`supabase/schema.sql\`:
+
+\`\`\`sql
+-- Run the contents of supabase/migrations/20261108_safety_workflows.sql.
+-- Do not rerun the initial schema if it has already been applied.
+\`\`\`
+
+1. The signed-in user must already have an \`organization_members\` row in an organization.
+2. Members with \`admin\` or \`manager\` roles can create and edit vehicles, cases and actions. Members with \`viewer\` can only read them. New tables have organization-scoped row-level security, cross-organization foreign keys and no authenticated DELETE permissions.
+3. In Halo, open **Cases** or **Vehicles**. The test login sees a toggle between the **fictional walkthrough** (unchanged, in browser memory) and **Organization records (Supabase)**. Other accounts see the organization-backed records by default.
+4. Create a vehicle, create a case linked to it, assign a corrective action, then refresh or sign in again to confirm persistence. An invited user without organization membership cannot access organization records.
+5. All saved rows are entered and reviewed by users. No automatic ingestion or grouping from ESP32/sensor_events has been implemented. Mark genuinely fictional manually entered records as \`is_demo=true\`. The UI includes a visible demo label.
+6. Do **not** seed fictitious incidents into a production organization's real event tables; prefer a dedicated testing organization with separate users and explicit labeling.
+
+The app will show a database schema error if the migration has not yet been applied. Production Vercel environment variables and deployed Supabase auth still need to be configured independently. **No migration is run automatically when merging this PR.**
+
+### Implementation boundaries
+
+This iteration has manually entered vehicle operating hours and device status, not verified telemetry. \`operator_ref\` is currently the assigned operator on the vehicle; the case separately stores \`operator_at_event\` to preserve historical context. The case's grouped \`observation_count\` is manually entered, not derived from a clustering service. There is no auto-refresh of these new management records: use the Refresh control after changes made in another session.
+
+A future ingestion service should add immutable raw observations, encounter clustering, case evidence references and an audit trail, then connect these to the workflow tables. Any real deployment should review PII retention and organizational privacy/access policies before recording named individuals.
 
 ## Proposed data flow
 
@@ -65,6 +96,6 @@ AI can draft a case chronology, summarize the evidence, highlight conflicting ob
 
 ## Demo implementation in this PR
 
-The signed-in `test@ualberta.ca` account sees **six fictional cases and five fictional vehicles** in the new Cases/Vehicles views. All sample records live in `frontend/src/demoSafetyData.ts`, never in Supabase. They cover reviewed near misses, an unreviewed candidate, a false alarm and a device outage. One sample includes before/after rates per 100 vehicle-hours to illustrate the right denominator.
+The signed-in `test@ualberta.ca` account sees **six fictional cases and five fictional vehicles** through the explicitly labeled sample-data mode. They live in `frontend/src/demoSafetyData.ts`, never in Supabase. The persistent organization-data mode offers manually managed records and editable corrective actions.
 
-Other accounts see empty module placeholders. The existing real event charts and Supabase data remain unchanged. This is a **front-end proof of concept**, not seeded cloud data; a dedicated demo organization and explicit migrations should replace the static fixtures when the data model is approved.
+Other accounts see the real organization-data module instead of fixtures. The existing sensor-event charts and Supabase incident records remain unchanged. This is a workflow prototype with real saved records, **not** automatic safety detection or analytics; the fictional test walkthrough remains isolated.
