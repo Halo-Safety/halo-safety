@@ -1,359 +1,260 @@
-# Halo Safety 🦺
+<div align="center">
 
-**Most systems warn you after you're already in danger. Halo stops the machine before it reaches you.**
+# 🦺 Halo Safety
 
-Halo is a collision-prevention and safety-analytics platform for construction and
-industrial sites. It warns a ground worker *and* the equipment operator the instant
-a worker is on a path to enter a machine's blind zone - it can trigger the machine
-to stop - and it turns every near-miss into site safety intelligence.
+**From proximity detection to context-aware worker safety.**
 
-*natHacks 2026 · Construction & Manufacturing*
+A prototype platform for exploring how wireless sensing, vehicle blind zones, and event monitoring can help reduce struck-by hazards around heavy equipment.
+
+**natHacks 2026 · Construction & Manufacturing**
+
+[**Open Halo**](https://halo-safety.vercel.app) · [**Explore the simulation**](https://halo-safety.vercel.app/#simulation) · [**Project roadmap**](roadmap.md) · [**GitHub contributions**](https://github.com/Halo-Safety/halo-safety/pulls)
+
+![React](https://img.shields.io/badge/React%20%2B%20TypeScript-Frontend-087ea4?style=flat-square)
+![Supabase](https://img.shields.io/badge/Supabase-Auth%20%26%20Database-3ecf8e?style=flat-square)
+![Vercel](https://img.shields.io/badge/Vercel-Web%20deployment-111111?style=flat-square)
+![ESP32](https://img.shields.io/badge/ESP32-Wireless%20prototyping-ea6b21?style=flat-square)
+![Status](https://img.shields.io/badge/Status-Research%20prototype-64748b?style=flat-square)
+
+<sub>The web application requires an invited account. The scenario simulator is a test environment, not a live safety monitor.</sub>
+
+</div>
+
+---
+
+## Contents
+
+- [About the project](#about-the-project)
+- [The problem](#the-problem)
+- [Our approach](#our-approach)
+- [What works today](#what-works-today)
+- [How it works](#how-it-works)
+- [Technical stack](#technical-stack)
+- [Try the demo](#try-the-demo)
+- [Run locally](#run-locally)
+- [Challenges and what we learned](#challenges-and-what-we-learned)
+- [What's next](#whats-next)
+- [Repository structure](#repository-structure)
+- [Team and acknowledgements](#team-and-acknowledgements)
+- [Safety and sources](#safety-and-sources)
 
 ---
 
-## Why this isn't "just another proximity alarm"
+## About the project
 
-A basic proximity buzzer warns the operator once a worker is already close. That's
-the baseline - and it's the thing everyone ignores. Halo is three steps past that:
+Halo is a **vehicle-to-worker safety monitoring concept** developed for construction and industrial environments where people work near mobile machinery. Rather than treating a radio proximity threshold as the whole solution, Halo explores how the **worker's location relative to the vehicle**, **configurable blind zones**, and **equipment operating context** could produce more meaningful warnings for workers and operators.
 
-1. **It predicts the collision**, not just detects proximity - it reacts to a
-   worker *converging* on a moving machine, a moment earlier than a fixed radius.
-2. **It can stop the machine**, not just beep - the danger signal drives a machine
-   interlock (demonstrated live on our rig: the machine physically halts).
-3. **It produces safety intelligence** - every near-miss becomes a heatmap and a
-   shift report that tells a site *where, when, and which machine* is dangerous, so
-   they fix the process, not just react to one alarm.
+Our hackathon work combines an interactive browser scenario lab, an authenticated monitoring dashboard, an early event-data model, and experiments involving ESP32 wireless communication and RSSI-based ranging.
 
-That's the difference between a gadget and a system a safety officer would buy.
+<details>
+<summary><b>Project summary — click to expand</b></summary>
 
----
+<br/>
+
+**Problem.** Heavy vehicles have blind spots, and workers on foot may be difficult for an operator to see. General audible alarms can be hard to interpret on busy sites. Halo investigates how context-aware warnings might supplement established worksite safety practices.
+
+**Approach.** The proposed system uses wireless devices attached to workers and vehicles. Multiple vehicle-side measurements could support approximate relative positioning; contextual rules would evaluate whether a worker is entering a relevant hazard zone, and eventually notify both people involved. The current browser simulator models the motion and zone logic without claiming to reproduce real-world radio accuracy.
+
+**Results to date.** The team developed simulated danger events and a local event-logging proof of concept. The current React application provides sign-in, organization-scoped event views, scenario playback, and a separately labeled sandbox event history. End-to-end hardware-to-cloud alert delivery has **not** yet been completed or validated.
+
+**Next steps.** Integrate and test the physical warning devices; measure radio ranging error and end-to-end warning latency; then develop an authenticated event-ingestion path and richer safety analysis.
+
+</details>
 
 ## The problem
 
-On construction and industrial sites, being struck by moving equipment is a leading
-cause of worker death. The operator physically cannot see a worker in the machine's
-blind spot, and the standard backup beeper warns the already-desensitized operator
-while giving the worker on the ground nothing. Per NIOSH, ground-worker struck-by
-incidents are about 73% of transportation-related work-zone fatalities, and roughly
-half happen while a vehicle is backing up.
+Struck-by hazards are a major concern in construction. According to [NIOSH's 2024 review](https://www.cdc.gov/niosh/bulletin/2024/struck-by.html), struck-by events are the leading cause of nonfatal injuries and the second most common cause of fatalities among construction workers. Among fatal occupational injuries at road construction sites from **2011–2022**, **44% (650 of 1,462)** involved a worker struck by a vehicle in a work zone.
 
-**Who we protect:** the ground worker in the blind spot, and the operator who can't
-see them.
+Blind areas vary by vehicle, operator position, and site conditions. A single distance threshold may warn about some nearby workers but provides little information about *which part of the vehicle is hazardous* or *whether the equipment is moving toward that worker*.
 
----
+Our goal is to explore a more informative warning system—not to replace traffic-control plans, trained spotters, existing safety procedures, or certified protection equipment.
 
-## What it does
+## Our approach
 
-- Each **worker** wears a tag (built into a hard hat / hi-vis vest).
-- Each **machine** carries beacon anchors and knows its own blind zones.
-- When a worker is converging on a machine's blind zone while the machine is active,
-  Halo responds in under 100 ms:
-  - the worker's tag **vibrates**,
-  - the operator's cab unit **buzzes, flashes, and shows the threat on an OLED**,
-  - and the **machine interlock halts the drive** (shown live on our model).
-- The **analytics dashboard** logs every close call and renders a site heatmap plus
-  an auto-generated shift safety report.
+Halo is designed around three connected ideas:
 
----
+1. **Sense proximity and relative position.** Explore ESP32 wireless links, RSSI filtering, and potentially multiple vehicle-mounted anchors for approximate worker positioning.
+2. **Interpret the situation.** Associate positions with configurable vehicle blind zones and, eventually, validated equipment motion information to decide when a warning is relevant.
+3. **Warn and learn.** The proposed physical system would alert both the worker and operator. Recorded sensor events could later support investigation, trend analysis, and corrective actions.
 
-## Standout features (what makes Halo win)
+**The distinction matters:** precise trilateration, reliable direction detection, physical alert actuation, and automated machine stopping are **not demonstrated production capabilities** of the current repository. The Python code contains a standalone least-squares positioning experiment, not a validated field-positioning system.
 
-### 1. Predictive convergence, not just proximity
-Halo watches the *rate of change* of the signal. A worker walking away at 1.9 m is
-fine; a worker closing fast at 2.5 m while the machine reverses toward them is not.
-We alarm on the trajectory, earlier than a static radius.
+## What works today
 
-### 2. Machine interlock (auto-stop)
-The danger signal doesn't only warn - it can command the machine to slow or stop.
-On our demo rig, a servo representing the machine's drive physically halts the
-instant danger fires. Production integrates with the equipment's existing interlock.
+| Component | Current status | Scope |
+| --- | --- | --- |
+| React monitoring workspace | **Implemented** | Overview, recorded-event metrics, active-warning reconstruction, seven-day trend, event history |
+| Supabase authentication | **Implemented** | Email/password sign-in, session management, and password recovery |
+| Organization-scoped data model | **Implemented** | PostgreSQL schema and row-level security policies for reading organization events |
+| Scenario lab | **Implemented (simulation)** | Move workers and equipment, define blind zones, trace routes, set speeds, run and pause scenarios |
+| Simulated warning activity | **Implemented (browser-only)** | Warning/clear transitions appear in a separate local-session timeline and Overview summary |
+| Local Flask + SQLite prototype | **Experimental / legacy** | Separate local endpoints and a serial-reader foundation for test events |
+| ESP32 / ESP-NOW ranging | **Hardware exploration** | Team experiments with wireless links and noisy RSSI measurements; not a verified production pipeline |
+| Multi-anchor positioning | **Algorithm prototype** | Standalone Python least-squares estimate; not integrated or accuracy-validated |
+| Physical worker/driver alerts | **Integration pending** | Vibration, buzzer, and lights are part of the intended hardware response |
+| Secure device-to-cloud ingestion | **Not yet implemented** | The deployed dashboard reads events; it does not securely accept device events yet |
+| Heatmaps, investigation reports, corrective actions | **Planned** | Longer-term site-safety intelligence workflows |
 
-### 3. Safety-analytics layer
-Near-misses are data. The dashboard shows a **site heatmap** (which zone/machine/
-time is most dangerous) and generates a **shift safety report**. This is the
-continuation story - the thing insurers and safety officers pay for.
-
-### 4. Grounded, worker-specific, infrastructure-free
-Only tagged people trigger it (not a pile of rebar). No GPS, no internet - devices
-talk directly over radio. Blind sectors come from NIOSH's *measured* blind-area
-diagrams, not guesses.
-
----
+> **Important:** An alert emitted by the simulator is an illustrative test event, **not a confirmed near-miss or real-world safety incident**. Simulation data are not inserted into Supabase and do not increase recorded sensor-alert counts.
 
 ## How it works
 
-```
- Worker Tag (ESP32)        Machine (ESP32 anchors + IMU + interlock)      Laptop
- +-------------+   radio    +-------------------------------+   radio    +-----------+
- | scans RSSI  |<---------->| beacons ID + blind zones;     |<---------->| Gateway   |
- | predicts    |  heartbeat | IMU = moving? cab OLED+buzzer |   alerts   | heatmap + |
- | convergence |            | servo interlock halts drive   |            | shift     |
- | vibrates    |            +-------------------------------+            | report    |
- +-------------+                                                         +-----------+
-```
+### Current software architecture
 
-Pipeline:
-
-1. **Heartbeat.** Every device broadcasts a small radio packet ~10x/second (ESP-NOW
-   or BLE advertising).
-2. **Distance.** On each packet, read signal strength (RSSI), smooth it, convert to
-   an estimated distance.
-3. **Convergence.** Track how fast distance is closing (rate of change) to predict a
-   collision before the worker is in the zone.
-4. **Sector.** 2-3 anchors on the machine -> compare RSSI -> which side the worker is
-   on (front / rear / left / right).
-5. **Machine state.** An IMU tells us whether the machine is moving / reversing.
-6. **Response (on the device).** When a worker is converging on a blind sector while
-   the machine is active: vibrate the tag, fire the cab alert, and trigger the
-   interlock. Filtering (smoothing + hysteresis + dwell) prevents false alarms.
-
-### The distance math
-
-```
-distance = 10 ^ ( ( measuredPower - rssi ) / ( 10 * n ) )
+```mermaid
+flowchart LR
+  SIM["Scenario lab<br/>worker + vehicle movement<br/>blind-zone rules"] -->|"same-origin postMessage"| UI["Halo React dashboard<br/>sandbox session events"]
+  UI -->|"authenticated reads"| DB["Supabase<br/>Auth + PostgreSQL + RLS"]
+  DEV["ESP32 / ESP-NOW<br/>radio experiments"] -. "future authenticated ingestion" .-> DB
+  LOCAL["Legacy local<br/>Flask + SQLite"] -. "separate prototype" .-> DEV
 ```
 
-- `measuredPower` = RSSI calibrated at exactly 1 metre (e.g. -59 dBm).
-- `n` = path-loss exponent (about 2 open air, 3-4 near metal).
-- Example: measuredPower -59, n 2.5, rssi -80 -> `10^(21/25) = 6.8 m`.
+The React frontend is deployed with **Vercel**. Signed-in users can read events belonging to their organization through Supabase row-level security. The event dashboard refreshes on a three-second interval.
 
-You tune the threshold empirically; you need a stable in/out decision, not exact
-metres.
+The **Simulation** tab contains a browser-based geometry engine. The worker and vehicle can follow user-defined routes while hazard regions move with the vehicle. The simulator notifies the surrounding Halo interface when a warning starts or clears. Those notifications are kept in browser memory and stay separate from real event records.
+
+The older **Flask/SQLite** backend remains in the repository for local experiments. Its ingestion endpoints are **not protected by the Supabase login** and must not be exposed as public production APIs.
+
+### Intended hardware pipeline (future integration)
+
+```text
+Worker wearable (ESP32) ←→ Vehicle unit (ESP32)
+          |                    |
+      Vibration          Buzzer / LEDs
+          └── Local alerts, independent of the web dashboard
+                                 |
+                   Authenticated event ingestion (planned)
+                                 |
+                       Halo event monitoring
+```
+
+RSSI is a noisy indicator of signal strength, **not a guaranteed metre-accurate range measurement**. The intended design needs calibration, smoothing, filtering, disconnection handling, and controlled testing before hazard decisions can be trusted.
+
+## Technical stack
+
+| Layer | Technology |
+| --- | --- |
+| Web interface | React 19, TypeScript, Vite, CSS, Lucide icons |
+| Web hosting | Vercel |
+| Authentication | Supabase Auth |
+| Data storage / authorization | Supabase PostgreSQL, row-level security |
+| Browser simulator | JavaScript, SVG, route and hazard-zone geometry |
+| Legacy local services | Python, Flask, Flask-SocketIO, SQLite, pySerial |
+| Hardware research | ESP32 microcontrollers, ESP-NOW, RSSI ranging |
+| Positioning experiment | Python, NumPy, SciPy least-squares |
+
+## Try the demo
+
+[**Launch the Halo application**](https://halo-safety.vercel.app)
+
+An **invited account** is required to sign in. The app does not provide anonymous access or a fake demo login.
+
+1. Sign in and open **Simulation** from the workspace sidebar.
+2. Move the worker into a blind zone, or plan a worker path and vehicle path with chosen speeds.
+3. Run the scenario and observe the driver/worker warning panels.
+4. Inspect the simulated alert and clear events in **Simulation activity**.
+5. Return to **Overview** to see the separate sandbox summary. The recorded production-event charts and table remain unaffected.
+
+The browser scenario and its local event history reset when the page is reloaded.
+
+## Run locally
+
+### React frontend
+
+Prerequisites: Node.js and npm, plus a configured Supabase project if you need to sign in.
+
+```bash
+git clone https://github.com/Halo-Safety/halo-safety.git
+cd halo-safety/frontend
+npm install
+
+# Copy .env.example to .env.local and fill in your public Supabase values.
+npm run dev
+```
+
+Set these in `frontend/.env.local` (or the corresponding Vercel environment settings):
+
+```dotenv
+VITE_SUPABASE_URL=https://YOUR-PROJECT.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=YOUR_PUBLIC_CLIENT_KEY
+```
+
+For first-time setup, apply [`supabase/schema.sql`](supabase/schema.sql) in the Supabase SQL editor, create an organization, and associate invited users with it. See [`frontend/AUTH_SETUP.md`](frontend/AUTH_SETUP.md) for the full setup, redirect URLs, and access-control steps.
+
+**Never place a Supabase `service_role` key or other server secret in a `VITE_` environment variable.** These variables are bundled into client-side JavaScript.
+
+### Standalone simulator / legacy backend
+
+The original simulator can also be run separately: see [`halo_nat/Halo-Simulator/Halo-Simulator/README.md`](halo_nat/Halo-Simulator/Halo-Simulator/README.md).
+
+The older Flask backend is located at [`halo_nat/app.py`](halo_nat/app.py) and uses [`halo_nat/requirements.txt`](halo_nat/requirements.txt). Treat it as a **local experimental service only**. It is not the authenticated API behind the deployed React dashboard.
+
+## Challenges and what we learned
+
+Our team explored both wireless embedded systems and web platform development:
+
+- **Radio interference.** RSSI fluctuates with obstruction, device orientation, and nearby metal. Averaging repeated readings can reduce short-term variation, but does not make RSSI a precise distance sensor.
+- **Position estimation.** Trilateration requires useful distance estimates from multiple known anchor positions. A mathematical solver alone does not establish field accuracy; timing-based ranging was also explored conceptually, but has not been validated here.
+- **Contextual warnings.** A visible simulation makes it easier to reason about moving vehicles, blind sectors, and when a warning should start or clear before putting those rules on physical devices.
+- **Frontend/backend boundaries.** The project evolved from a local Flask dashboard to a deployed React application with Supabase authentication and an organization-scoped data model. A secure production event-ingestion service remains separate work.
+- **Team integration.** Bringing together firmware experiments, a teammate's simulator, and web deployment highlighted the importance of clear interfaces, realistic scope, and careful version-control collaboration.
+
+## What's next
+
+The next development stages are:
+
+1. **Close the hardware loop:** demonstrate repeatable ESP32 communication, calibrated RSSI-based proximity decisions, worker vibration, and operator alerts independent of the dashboard.
+2. **Measure and document performance:** test different positions, orientations, obstacles, missed packets, false alarms, and end-to-end warning latency. The earlier under-100-ms goal remains a **test target**, not a measured claim.
+3. **Connect devices securely:** implement authenticated server-side event ingestion and organizational association without exposing privileged credentials to browsers.
+4. **Improve contextual detection:** evaluate multiple anchors, conservative blind-zone matching, machine-motion inputs, and possibly UWB-based ranging.
+5. **Develop safety intelligence:** investigate alert histories, group related events, identify recurring risk patterns, and track proposed corrective actions.
+6. **Validate before deployment:** conduct controlled field testing, engineering reviews, and a safety assessment before any reliance on physical warning or machine-interlock behavior.
+
+Our detailed work breakdown is maintained in [`roadmap.md`](roadmap.md).
+
+## Repository structure
+
+```text
+halo-safety/
+├── frontend/
+│   ├── src/                  # React application, auth, event views
+│   ├── public/simulator/     # Embedded browser scenario lab
+│   ├── AUTH_SETUP.md         # Supabase setup and security notes
+│   └── README.md             # Frontend-specific instructions
+├── supabase/
+│   └── schema.sql            # Organizations, memberships, sensor events, RLS
+├── halo_nat/
+│   ├── app.py                # Legacy local Flask API
+│   ├── database.py           # Legacy SQLite event storage
+│   ├── serial_reader.py      # Experimental serial event reader
+│   ├── locator.py            # Standalone trilateration experiment
+│   └── Halo-Simulator/       # Original standalone simulator
+├── roadmap.md                # Project planning and validation milestones
+└── README.md                 # You are here
+```
+
+## Team and acknowledgements
+
+**Halo Safety — natHacks 2026.** The project was developed collaboratively across embedded-systems exploration, scenario simulation, frontend development, research, and documentation.
+
+See the [repository contributors](https://github.com/Halo-Safety/halo-safety/graphs/contributors) and [pull request history](https://github.com/Halo-Safety/halo-safety/pulls?q=is%3Apr) for the code contribution record.
+
+We thank the natHacks organizers and the teams who contribute open safety research and construction equipment visibility guidance.
+
+## Safety and sources
+
+> **Research prototype — not certified safety equipment.** Halo is not an industrial safety controller, does not provide verified real-time collision prediction, and must not be relied upon to protect workers or stop machinery. Existing workplace controls and qualified safety procedures remain essential.
+
+- [NIOSH (2024): Using Internal Traffic Control Plans to Prevent Construction Worker Injuries and Fatalities in Work Zones](https://www.cdc.gov/niosh/bulletin/2024/struck-by.html) — construction struck-by context and historical statistics.
+- [NIOSH: Construction Equipment Visibility](https://www.cdc.gov/niosh/bulletin/2011/visibility.html) — vehicle blind-area research and visibility diagrams.
+- [Halo project roadmap](roadmap.md) — intended MVP boundaries, validation work, and future improvements.
 
 ---
 
-## Implementation guide
+<div align="center">
 
-Build in this order. Each step is demonstrable on its own, so you always have
-something working.
+**Halo Safety · Explore risks. Test scenarios. Build safer systems.**
 
-### Step 1 - Two ESP32s + smoothed RSSI (MVP core)
+[Back to top](#-halo-safety)
 
-```cpp
-// Worker tag: keep a smoothed RSSI so one noisy packet does not trigger us.
-float smoothedRssi = -70.0;          // start near a typical value
-const float smoothingFactor = 0.2;   // 0..1; lower = smoother but slower
-
-void onHeartbeatReceived(int rawRssi) {
-  // Exponential moving average: blend the new reading into the running value.
-  smoothedRssi = (smoothingFactor * rawRssi) + ((1.0 - smoothingFactor) * smoothedRssi);
-}
-
-float estimateDistanceMeters(float rssi) {
-  // Log-distance path-loss model. Calibrate these two per environment.
-  float measuredPowerAtOneMeter = -59.0;  // RSSI measured at exactly 1 m
-  float pathLossExponent = 2.5;           // ~2 open air, 3-4 near metal
-  float exponent = (measuredPowerAtOneMeter - rssi) / (10.0 * pathLossExponent);
-  return pow(10.0, exponent);
-}
-```
-
-### Step 2 - Predictive convergence (standout feature #1)
-
-```cpp
-// Track whether the worker is closing in, not just how far away they are.
-float previousDistance = 99.0;
-unsigned long previousTime = 0;
-
-bool isConverging(float currentDistance) {
-  unsigned long now = millis();
-  float secondsElapsed = (now - previousTime) / 1000.0;
-  if (secondsElapsed <= 0) {
-    return false;  // avoid dividing by zero on the first call
-  }
-
-  // Closing speed in metres per second. Negative means getting closer.
-  float closingSpeed = (currentDistance - previousDistance) / secondsElapsed;
-
-  previousDistance = currentDistance;
-  previousTime = now;
-
-  // Worker is approaching fast enough to matter (tune the threshold).
-  if (closingSpeed < -0.5) {
-    return true;
-  }
-  return false;
-}
-```
-
-### Step 3 - The response (alert + interlock, with anti-chatter)
-
-```cpp
-const float enterZoneMeters = 2.0;   // fire when closer than this
-const float clearZoneMeters = 3.0;   // clear only when farther than this (hysteresis)
-const unsigned long dwellMs = 300;   // must stay dangerous this long before firing
-
-bool alarmActive = false;
-unsigned long inZoneSince = 0;
-
-void updateResponse(float distance, bool converging, bool inBlindSector, bool machineMoving) {
-  // Danger = in range OR converging fast, AND in a blind sector, AND machine active.
-  bool inRange = (distance < enterZoneMeters) || converging;
-  bool dangerous = inRange && inBlindSector && machineMoving;
-
-  if (dangerous) {
-    if (inZoneSince == 0) {
-      inZoneSince = millis();          // start the dwell timer
-    }
-    if (millis() - inZoneSince >= dwellMs) {
-      alarmActive = true;              // sustained danger: fire
-    }
-  } else if (distance > clearZoneMeters || !machineMoving) {
-    alarmActive = false;               // clear with hysteresis / machine stopped
-    inZoneSince = 0;
-  }
-
-  if (alarmActive) {
-    startVibration();                  // warn the worker locally, now
-    sendAlertPacket();                 // tell the cab unit + gateway
-    triggerMachineInterlock();         // standout feature #2: stop the drive
-  } else {
-    stopVibration();
-    releaseMachineInterlock();
-  }
-}
-```
-
-### Step 4 - Sector detection
-
-```cpp
-// Decide which side of the machine the worker is on by strongest anchor signal.
-String whichSector(float rssiFront, float rssiLeftRear, float rssiRightRear) {
-  if (rssiFront >= rssiLeftRear && rssiFront >= rssiRightRear) {
-    return "front";
-  }
-  if (rssiLeftRear >= rssiRightRear) {
-    return "left-rear";
-  }
-  return "right-rear";
-}
-```
-
-### Step 5 - Machine motion (IMU)
-Read the 9-DOF IMU; if acceleration/rotation exceeds a small threshold, the machine
-is "moving." If the IMU falls through, a push button simulates reverse for the demo.
-
-### Step 6 - Interlock (standout feature #2)
-On alarm, drive a micro servo on the machine model to the "stopped" position (and an
-on-board LED/relay in a real build). This is what makes the demo unforgettable.
-
-### Step 7 - Blind-zone data (credibility)
-Use NIOSH's measured blind-area diagrams, not invented zones.
-- Index: https://www.cdc.gov/niosh/motor-vehicle/constructionequipmentvisibilitydiagram/
-- All machines (PDF): https://www.cdc.gov/niosh/motor-vehicle/constructionequipmentvisibilitydiagram/pdfs/catreport2.pdf
-
-Pick 2-3 machines (wheel loader, dump truck, skid steer). Read each at the 1500 mm
-plane (standing-worker height); the gray wedge is the blind area. Encode per machine
-ID a list of blind sectors + a danger radius; the beacon broadcasts its machine type.
-
-### Step 8 - Safety-analytics dashboard (standout feature #3)
-Gateway ESP32 forwards every event to the laptop. The dashboard (Python + WebSocket
-+ simple HTML) shows:
-- a live feed of near-misses,
-- a **site heatmap** (count by machine / sector / time),
-- an auto-generated **shift safety report**.
-
----
-
-## What you need (from the natHacks hardware list)
-
-- 4x ESP32 V2 *(MVP needs 2)* - tag + machine anchors / cab / gateway
-- 1x Vibrating disk motor + 1x Vibrating motor Driver Board - worker alert
-- 1x Buzzer (Assorted Buzzers) - cab alarm
-- 1x Miniature wired multicolor LED - cab warning light
-- 1x OLED Module (128x64) - cab threat display
-- 1x 9-DOF IMU + 1x STEMMA QT 4-pin cable - machine motion (no soldering)
-- 1x Micro servo - the machine interlock (auto-stop demo)
-- 1x Switch (button) - manual reverse trigger / testing
-- 1x Li-po 3.7V 400mAh - powers the wearable tag (ESP32 V2 charges it over USB-C)
-- 2x 400 Points Breadboard
-- 1x Wire pack male-male, 1x Wire pack female-male
-- 1x Assorted Resistors (~220-330Ω for the LED)
-
-**Why these:** ESP32 V2 has onboard LiPo charging + USB-C + STEMMA QT, so battery and
-IMU plug in with no soldering. Drive the vibrating motor through its driver board, not
-straight off a GPIO pin (back-EMF).
-
-**MVP if stock is low:** 2x ESP32 V2 + disk motor + driver + buzzer + LED + breadboard
-+ jumpers. Zero ESP32 -> two phones.
-
----
-
-## Scope tiers
-
-- **MVP:** 2 devices, proximity alarm, worker + cab alert, dashboard log.
-- **Standout:** + predictive convergence + machine interlock (auto-stop) + analytics
-  heatmap + hard-hat form factor.
-- **Production (say in the pitch):** swap RSSI for UWB (10-30 cm ranging, true angle);
-  integrate with the machine's real interlock.
-
----
-
-## Roles (5 people)
- 
-Two clear duties per person.
- 
-**1. Firmware & Radio**
-- Get the ESP32s exchanging heartbeats and reading RSSI (plus the IMU and anchors).
-- Drive the outputs: vibration motor, cab buzzer/LED, and the interlock servo.
-
-**2. Decision Logic (the brains)**
-- Turn RSSI into distance + predictive convergence (closing speed).
-- Write the fire/clear rule using sector + machine-motion, with anti-chatter filtering.
-
-**3. Analytics & Dashboard**
-- Gateway: log every event from the devices to the laptop.
-- Build the web dashboard: live feed + site heatmap + shift report.
-  
-**4. Hardware & Product**
-- Build the wearable tag (hard hat / vest) and the cab unit.
-- Build the machine model with the auto-stop servo rig so the demo looks real.
-  
-**5. Research, Safety & Pitch**
-- NIOSH blind-zone data + the 250/600-word submissions.
-- Slides, demo script, and the backup video.
-  
-**Handoffs:** Firmware feeds raw anchor RSSI + IMU to Decision Logic (it computes
-sector and motion). Research hands the NIOSH zone numbers to Decision Logic to plug
-in. Everyone tests their own piece; Role 5 runs the dress rehearsal.
- 
----
-
-## Demo (and why it can't fail)
-
-1. Worker near the machine, machine idle / facing forward -> silent (operator sees you).
-2. Worker converges on the rear sector, machine "reverses" -> tag vibrates, cab buzzes
-   + OLED shows "WORKER - REAR - 1.8 m", and **the machine servo halts**.
-3. Step back -> system clears, machine releases.
-4. Show the dashboard heatmap filling with near-misses + the shift report.
-
-**Record a clean run Sunday** as a backup video (natHacks allows video inside the live
-demo). If the live radio misbehaves, play the clip and keep talking.
-
----
-
-## 64-hour timeline (Fri 7 PM -> Mon 11 AM)
-
-- **Fri night:** repo + toolchains; 2 ESP32s exchanging heartbeats; raw RSSI printing.
-- **Sat AM:** smoothing + distance + threshold -> tag vibrates on approach. MVP alarm.
-- **Sat PM:** cab alert + OLED + gateway + basic dashboard. Lock the MVP.
-- **Sat night:** sector detection + NIOSH zones; add the servo interlock.
-- **Sun AM:** predictive convergence; IMU motion; tune filtering/hysteresis/dwell.
-- **Sun PM:** analytics heatmap + shift report; hard-hat form factor; record backup
-  video; write 250/600-word submissions; slides.
-- **Sun night:** full dress rehearsal + Q&A; freeze code.
-- **Mon AM:** submit by 11:00, buffer for breakage.
-
----
-
-## Risks & mitigations
-
-- **RSSI noisy near metal** -> smoothing + hysteresis + dwell; generous demo threshold;
-  name UWB as the production fix.
-- **Body blocks 2.4 GHz** -> wear the tag high (hard hat / shoulder); acknowledge it.
-- **Hardware shortage** -> MVP needs 2 boards; phones are the fallback.
-- **Live demo flakes** -> pre-recorded backup video.
-- **Scope creep** -> MVP is locked before any standout feature is attempted.
-
-## Sources
-- NIOSH Construction Equipment Visibility - blind-area diagrams.
+</div>
