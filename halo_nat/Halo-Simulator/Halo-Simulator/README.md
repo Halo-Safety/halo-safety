@@ -24,3 +24,13 @@ Each browser runs its own simulation. The diagram and event history stay in memo
 4. Choose **Move vehicle** and drag or tap on the map. Use **Heading** to rotate it. Hide **Show reference** to view the moving outline without the original drawing. Choose **Move worker** to control the worker again.
 
 The sample loader is ready to move as soon as you open the app. Its starting proportions are illustrative.
+
+## Play a movement scenario
+
+1. Place the worker and vehicle at their starting positions.
+2. Choose **Plan worker path** and click waypoints in travel order. Repeat with **Plan vehicle path**. Each route starts at the participant’s position when its first waypoint is added. To change a route’s start, clear the route, move the participant, and plot it again.
+3. Enter speeds in metres per second. A speed of **0** or an empty route keeps that participant in place.
+4. Choose **Play**. Both start together and stop at their own final waypoint. The vehicle faces the next leg as it turns, carrying its zones with it. The log records crossings in simulation seconds.
+5. Use **Pause** and **Resume** to inspect the interaction. **Reset run** restores the pre-run positions, clears the log, and keeps the paths for another run.
+
+Uploaded diagrams use the calibrated scale. The sample uses an illustrative 20 image pixels per metre. Turns happen at the waypoints and the simulation samples positions during playback.

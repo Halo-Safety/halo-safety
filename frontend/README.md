@@ -72,3 +72,14 @@ npm run build
 ```
 
 The earlier Flask HTML template is preserved while the team transitions to React.
+
+## Simulator integration (latest main PR #5)
+
+The `Simulation` link in the React sidebar opens the teammate's browser-based blind-spot simulator, copied without rewriting its movement/geometry code to `frontend/public/simulator/`.
+
+- Create worker and vehicle paths, specify speeds and play/pause/reset the animation.
+- Detect entries into blind zones and near-vehicle clearance areas.
+- Use example vehicle images in the Simulation header, or upload your own.
+- In browser Demo Mode only, alarm on/off transitions post a same-origin message to React and append `SIM_WORKER_01` proximity events to the existing browser-local demo history.
+
+The original simulator at `halo_nat/Halo-Simulator/Halo-Simulator/` remains unchanged. Upstream changes there must be deliberately synchronized with the public copy; this is an integration snapshot. For real server-stored incidents, implement authenticated API ingestion separately. Do not treat animated intersections as real near misses.

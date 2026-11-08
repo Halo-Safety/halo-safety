@@ -7,3 +7,13 @@
 .api-pill.demo{background:#3d3423;border-color:#785c33;color:#f6ce83}
 .demo-banner{display:flex;align-items:flex-start;gap:11px;background:#272b31;border:1px solid #826638;border-radius:11px;padding:14px 17px;color:#ead8ae;font-size:12px;line-height:1.5;margin-bottom:22px}
 .demo-banner strong{color:#ffe3a5}.demo-banner svg{color:#eebf5b;flex-shrink:0}
+
+/* Simulator is isolated in an iframe so the teammate's styles remain intact. */
+.simulator-page h1{font-size:32px;letter-spacing:-.9px;margin:11px 0 8px}
+.simulator-intro{color:#a0aec1;font-size:13px;line-height:1.6;margin:0 0 18px}
+.simulator-meta{display:flex;gap:12px;justify-content:space-between;flex-wrap:wrap;color:#c5aa69;font-size:11px;padding:13px 15px;border:1px solid #725c34;background:#2c2a29;border-radius:10px;margin-bottom:14px}
+.simulator-frame{width:100%;min-height:1040px;border:1px solid #314257;background:#edf2f7;border-radius:14px;display:block}
+.simulator-caption{font-size:11px;line-height:1.6;color:#8393aa;margin:14px 0}
+.sample-diagrams{display:flex;flex-wrap:wrap;align-items:center;gap:12px;color:#8ea1b9;font-size:11px;margin-bottom:12px}
+.sample-diagrams a{color:#f2c668;text-decoration:underline;text-underline-offset:3px}
+@media(max-width:760px){.simulator-page h1{font-size:27px}.simulator-frame{min-height:1250px}}

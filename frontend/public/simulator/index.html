@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Halo Blind Spot Simulator</title>
+<style>
+  :root { font: 16px system-ui, sans-serif; color: #15233a; background: #edf2f7; }
+  * { box-sizing: border-box; }
+  body { margin: 0 auto; padding: 24px; max-width: 1440px; }
+  header { margin-bottom: 20px; }
+  h1, h2, p { margin: 0 0 10px; }
+  h1 { font-size: clamp(1.6rem, 4vw, 2.5rem); }
+  h2 { font-size: 1.1rem; }
+  .tag { display: inline-block; margin-bottom: 8px; padding: 4px 10px; border-radius: 20px; background: #dce9f8; }
+  main { display: grid; grid-template-columns: minmax(0, 1fr) 290px; gap: 16px; }
+  section, aside { padding: 16px; background: white; border-radius: 14px; }
+  aside section { padding: 12px 0; border-bottom: 1px solid #dce3ec; }
+  .controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 12px 0; }
+  fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+  .worker-route { color: #145d9b; }
+  .vehicle-route { color: #864618; }
+  button, input { font: inherit; max-width: 100%; }
+  button { cursor: pointer; border: 1px solid #9db0c6; border-radius: 8px; background: #f2f6fb; padding: 7px 10px; color: inherit; }
+  button[aria-pressed="true"] { background: #194b76; color: white; }
+  button:disabled { opacity: .45; cursor: default; }
+  input[type="number"] { width: 85px; }
+  svg { display: block; width: 100%; max-height: 74vh; background: #fff; border: 1px solid #bdc9d7; border-radius: 8px; touch-action: none; }
+  .map-legend { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 10px; font-size: .875rem; }
+  .map-legend span::before { content: ""; display: inline-block; width: .75em; height: .75em; margin-right: .4em; border-radius: 2px; background: var(--swatch); }
+  #map[data-reference="true"] #vehicle-body { fill-opacity: .20; }
+  #map[data-reference="true"] #vehicle-label { fill: #173650; }
+  #status { min-height: 2.7em; color: #36536e; }
+  .warning { color: #a21d27; font-weight: bold; }
+  ol { padding-left: 24px; overflow-wrap: anywhere; }
+  @media (max-width: 760px) { main { grid-template-columns: 1fr; } body { padding: 14px; } }
+</style>
+<header>
+  <span class="tag">Simulation</span>
+  <h1>Halo Blind Spot Simulator</h1>
+  <p>Place a worker on a vehicle diagram and see when they enter a traced blind zone.</p>
+</header>
+<main>
+  <section aria-label="Simulator controls and map">
+    <fieldset id="setup" aria-label="Scenario setup">
+    <label for="upload">Upload a top-down diagram (PNG, JPEG, WebP)</label>
+    <div class="controls"><input id="upload" type="file" accept="image/png,image/jpeg,image/webp"></div>
+    <div class="controls">
+      <label for="meters">Reference length (m)</label>
+      <input id="meters" type="number" min="0.01" step="any" value="5">
+      <button id="scale">Set scale</button>
+      <button id="trace">Add blind zone</button>
+      <button id="finish" disabled>Finish zone</button>
+      <button id="move" aria-pressed="true">Move worker</button>
+    </div>
+    <div class="controls">
+      <label for="vehicle-name">Vehicle</label>
+      <input id="vehicle-name" value="Demo loader" maxlength="48">
+      <button id="shape">Trace vehicle shape</button>
+      <label for="vehicle-length">Length (m)</label>
+      <input id="vehicle-length" type="number" min="0.01" step="any" value="8.5">
+      <label for="vehicle-width">Width (m)</label>
+      <input id="vehicle-width" type="number" min="0.01" step="any" value="6">
+      <button id="identify">Mark front and rear</button>
+      <button id="vehicle-move">Move vehicle</button>
+      <label for="clearance">Warning clearance (m)</label>
+      <input id="clearance" type="number" min="0" step="0.1" value="0.5">
+      <label for="heading">Heading <output id="heading-value">0°</output></label>
+      <input id="heading" type="range" min="0" max="359" value="0">
+      <label><input id="reference-visible" type="checkbox" disabled> Show reference image</label>
+    </div>
+    <div class="controls">
+      <button id="worker-path" class="worker-route">Plan worker path</button>
+      <label for="worker-speed">Worker speed (m/s)</label>
+      <input id="worker-speed" type="number" min="0" max="30" step="any" value="1.4">
+      <button id="clear-worker">Clear worker path</button>
+    </div>
+    <div class="controls">
+      <button id="vehicle-path" class="vehicle-route">Plan vehicle path</button>
+      <label for="vehicle-speed">Vehicle speed (m/s)</label>
+      <input id="vehicle-speed" type="number" min="0" max="30" step="any" value="2">
+      <button id="clear-vehicle">Clear vehicle path</button>
+    </div>
+    </fieldset>
+    <div class="controls" aria-label="Playback">
+      <button id="play">Play</button>
+      <button id="pause" disabled>Pause</button>
+      <button id="reset-run" disabled>Reset run</button>
+      <output id="clock">0.0 s</output>
+    </div>
+    <p id="status" role="status">Sample diagram loaded. Tap or drag on the map to move the worker.</p>
+    <svg id="map" viewBox="0 0 800 500" tabindex="0" aria-label="Vehicle diagram. In Move worker mode, use the arrow keys to move the worker.">
+      <g id="sample">
+        <rect x="0" y="0" width="800" height="500" fill="#f7f9fb"/>
+      </g>
+      <image id="diagram" visibility="hidden"/>
+      <defs>
+        <pattern id="meter-grid" patternUnits="userSpaceOnUse">
+          <path id="grid-line" fill="none" stroke="#237552" stroke-opacity=".45" vector-effect="non-scaling-stroke"/>
+        </pattern>
+      </defs>
+      <rect id="grid" width="100%" height="100%" fill="url(#meter-grid)" display="none"/>
+      <polyline id="worker-route" fill="none" stroke="#145d9b" stroke-width="3" vector-effect="non-scaling-stroke"/>
+      <polyline id="vehicle-route" fill="none" stroke="#864618" stroke-width="3" stroke-dasharray="7 4" vector-effect="non-scaling-stroke"/>
+      <g id="vehicle-pose">
+        <g id="zones" fill="#ef7276" fill-opacity=".32" stroke="#b52836" stroke-width="2"/>
+        <polygon id="vehicle-clearance" fill="none" stroke="#eaa237" stroke-opacity=".4" stroke-linejoin="round"/>
+        <polygon id="vehicle-body" fill="#365d7b" fill-opacity=".85" stroke="#173650" vector-effect="non-scaling-stroke"/>
+        <polygon id="vehicle-front" fill="#b3d8ef"/>
+        <text id="vehicle-label" text-anchor="middle" dominant-baseline="central" fill="white"/>
+      </g>
+      <polyline id="draft" fill="none" stroke="#9b3340" stroke-width="3" vector-effect="non-scaling-stroke"/>
+      <line id="ruler" stroke="#237552" stroke-width="3" vector-effect="non-scaling-stroke"/>
+      <circle id="worker" fill="#145d9b" stroke="white" stroke-width="2" vector-effect="non-scaling-stroke"/>
+    </svg>
+    <div class="map-legend" aria-label="Map legend">
+      <span style="--swatch: #365d7b">Vehicle</span>
+      <span style="--swatch: #145d9b">Worker</span>
+      <span style="--swatch: #b52836">Blind zone</span>
+      <span style="--swatch: #eaa237">Vehicle clearance</span>
+      <span style="--swatch: #864618">Vehicle route</span>
+    </div>
+  </section>
+  <aside aria-label="Warnings and event history">
+    <section><h2>Driver</h2><p id="driver" role="status">No active warning</p></section>
+    <section><h2>Worker</h2><p id="walker" role="status">No active warning</p></section>
+    <section><h2>Map scale</h2><p id="ratio">Sample diagram · illustrative</p></section>
+    <section><h2>Blind zones</h2><ol id="zone-list"></ol></section>
+    <section><h2>Encounter log</h2><p id="empty">No crossings yet.</p><ol id="events"></ol></section>
+  </aside>
+</main>
+<script src="./simulator.js"></script>
+</html>
