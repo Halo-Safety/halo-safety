@@ -1,92 +1,42 @@
-# Halo — React dashboard and Vercel deployment
+# Halo frontend
 
-Halo's React + TypeScript + Vite frontend is in `frontend/`. The original Flask backend remains under `halo_nat/`.
+React + Vite web application for proximity safety events, equipment activity, and scenario simulation.
 
-## Deploy a stand-alone demo to Vercel
-
-The production build automatically enters **Demo Mode** if `VITE_API_BASE_URL` is unset. Demo Mode contains clearly labelled, simulated sample events, a 7-day chart, current simulated alerts, and an interactive **Generate demo alert** button.
-
-Demo events live in the **visitor's own browser localStorage**. They are not shared across users, are not real sensor data, and are not stored in a production database.
-
-1. Open [Vercel New Project](https://vercel.com/new) and import `Halo-Safety/halo-safety` from GitHub.
-2. Choose **Root Directory = `frontend`**.
-3. Use the **Vite** framework preset, **Build Command = `npm run build`**, **Output Directory = `dist`**.
-4. **Do not set `VITE_API_BASE_URL`** until you deploy a real backend. `VITE_DEMO_MODE=true` explicitly forces demo mode if desired.
-5. Deploy. Then in Vercel Project Settings → Environments → Production → Branch Tracking, set `rus1an` as the production branch if you want production to follow `rus1an` rather than the repository default `main`. Alternatively, use the branch's Preview Deployment without changing the production branch.
-
-## Local development — no Flask, no ESP32
-
-In PowerShell:
+## Run locally
 
 ```powershell
 cd frontend
 npm install
-$env:VITE_DEMO_MODE="true"
+Copy-Item .env.example .env.local
+# Fill in the Supabase project URL and publishable (browser-safe) key.
 npm run dev
 ```
 
-Open http://localhost:5173. To switch back to the Flask API in a new terminal, remove the demo override with `Remove-Item Env:VITE_DEMO_MODE -ErrorAction SilentlyContinue` before starting Vite.
+The app does not create fake incidents or allow bypassing sign-in.
 
-## Local development — Flask API
+## Auth and database
 
-In terminal 1:
+**Required:** Supabase Auth + Postgres with Row Level Security.
 
-```powershell
-cd halo_nat
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-python app.py
-```
+See [AUTH_SETUP.md](./AUTH_SETUP.md) for:
+- Creating users and configuring password reset
+- `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`
+- SQL schema `../supabase/schema.sql`
+- Organization membership and row-level access control
+- Configuring the Vercel deployment
 
-The server now starts **without COM3**. The serial gateway is optional:
+Account creation is administrator/invitation managed (no open sign-up UI). After deployment, email/password sign-in, sign-out, and password recovery use Supabase Auth. Without valid environment variables, sign-in remains unavailable.
 
-```powershell
-$env:HALO_SERIAL_PORT="COM3"
-python app.py
-```
+**Data ingestion:** `sensor_events` reads are protected by Supabase RLS. Ingestion from ESP32 hardware is not implemented on Vercel yet. The old local Flask routes are not secured merely by adding this sign-in page: don't expose them publicly without server-side authorization.
 
-In terminal 2:
+## UI
 
-```powershell
-cd frontend
-npm install
-npm run dev
-```
+A light login card sits beside the Halo brand on a turquoise-to-blue geometric SVG. The vector mesh is generated ahead of time, then moves via a single composited CSS transform — no Canvas animation loop or per-frame JavaScript calculations.
 
-Vite proxies `/api` to `http://127.0.0.1:5000`. If `VITE_DEMO_MODE` is not set, React calls the real local Flask API.
-
-## Cloud backend — later phase
-
-For multi-user real incidents, deploy the authenticated Flask API separately, replace local SQLite with persistent hosted Postgres, and set `VITE_API_BASE_URL=https://your-backend.example.com` in Vercel. Configure Flask's `HALO_ALLOWED_ORIGINS` to include the Vercel site origin.
-
-Do not expose the existing unauthenticated Flask `POST /api/demo-alert` or `POST /api/device-event` endpoints on the public internet.
-
-A USB ESP32 connected to a team laptop (or a local Ollama server) will **not** be accessible to Vercel automatically. A local gateway can eventually forward event records to the authenticated cloud API.
+The Dashboard has a light workspace theme. The simulator remains the teammate's original standalone iframe, and simulator animations are not stored as real safety incidents.
 
 ## Verify build
 
 ```powershell
-cd frontend
-npm install
 npm run build
 ```
-
-The earlier Flask HTML template is preserved while the team transitions to React.
-
-## Simulator integration (latest main PR #5)
-
-The `Simulation` link in the React sidebar opens the teammate's browser-based blind-spot simulator, copied without rewriting its movement/geometry code to `frontend/public/simulator/`.
-
-- Create worker and vehicle paths, specify speeds and play/pause/reset the animation.
-- Detect entries into blind zones and near-vehicle clearance areas.
-- Use example vehicle images in the Simulation header, or upload your own.
-- In browser Demo Mode only, alarm on/off transitions post a same-origin message to React and append `SIM_WORKER_01` proximity events to the existing browser-local demo history.
-
-The original simulator at `halo_nat/Halo-Simulator/Halo-Simulator/` remains unchanged. Upstream changes there must be deliberately synchronized with the public copy; this is an integration snapshot. For real server-stored incidents, implement authenticated API ingestion separately. Do not treat animated intersections as real near misses.
-
-## Visual design: geometric background and demo welcome
-The React experience opens with a light login-inspired card over a continuously animated triangular wireframe mesh and rotating 3D geometric forms drawn with Canvas 2D. The same background sits behind the Dashboard and Simulation. Motion can be paused with a UI control; the browser's `prefers-reduced-motion` is respected by default.
-
-**There is no real authentication yet.** The work-email and password fields are disabled previews, and **Enter demo workspace** opens the dashboard as an unauthenticated browser-local guest session (sessionStorage). **Exit demo** returns to the welcome screen. Nothing in this flow restricts API or simulator URLs; real sign-in requires a supported authentication provider, server-side session validation and access control. Do not enter real passwords into this prototype.
-
-The simulator remains the teammate's existing iframe/geometry implementation; its movement and detection logic is untouched.

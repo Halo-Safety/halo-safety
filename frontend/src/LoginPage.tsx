@@ -1,85 +1,137 @@
-import { ArrowRight, LockKeyhole, Mail, Pause, Play, ShieldCheck, Sparkles } from 'lucide-react';
+import { useState, type FormEvent } from 'react';
+import { ArrowRight, Eye, EyeOff } from 'lucide-react';
 
 type Props = {
-  onContinue: () => void;
-  motionEnabled: boolean;
-  onMotionChange: () => void;
+  configured: boolean;
+  recoveryMode: boolean;
+  onSignIn: (email: string, password: string) => Promise<void>;
+  onRequestReset: (email: string) => Promise<void>;
+  onUpdatePassword: (password: string) => Promise<void>;
 };
 
-export default function LoginPage({ onContinue, motionEnabled, onMotionChange }: Props) {
+export default function LoginPage({
+  configured, recoveryMode, onSignIn, onRequestReset, onUpdatePassword,
+}: Props) {
+  const [view, setView] = useState<'login' | 'forgot'>('login');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
+
+  const forgot = !recoveryMode && view === 'forgot';
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError('');
+    setNotice('');
+    setBusy(true);
+    try {
+      if (recoveryMode) {
+        if (password.length < 8) throw new Error('Use at least 8 characters.');
+        await onUpdatePassword(password);
+        setNotice('Password changed. You can sign in now.');
+        setPassword('');
+      } else if (forgot) {
+        await onRequestReset(email.trim());
+        setNotice('If that address has an account, a reset link will be sent.');
+      } else {
+        await onSignIn(email.trim(), password);
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Something went wrong.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const heading = recoveryMode ? 'Set new password' : forgot ? 'Reset password' : 'Sign in';
   return (
-    <main className="login-screen">
-      <header className="login-site-header">
-        <a href="#welcome" className="login-site-brand" aria-label="Halo homepage">
-          <span className="login-site-symbol"><ShieldCheck size={20} strokeWidth={1.8} /></span>
-          <span>halo<span className="login-brand-dot">.</span></span>
-        </a>
-        <div className="login-site-meta">
-          <span className="login-site-status"><span /> SYSTEMS ONLINE · DEMO</span>
-          <span className="login-site-version">HALO / 01</span>
-        </div>
-      </header>
+    <main className="auth-page">
+      <section className="auth-brand" aria-label="About Halo">
+        <div className="auth-brand-name">halo<span>.</span></div>
+        <p>Proximity safety and incident management.</p>
+      </section>
 
-      <div className="login-content" id="welcome">
-        <div className="login-story">
-          <div className="login-overline"><span className="login-overline-line" /> SAFETY, MADE VISIBLE</div>
-          <h1>See the signals.<br/><em>Shape the future.</em></h1>
-          <p>One workspace for proximity signals, near-miss investigation, and clearer operational decisions.</p>
-          <div className="login-story-footer">
-            <div className="login-story-stat"><span>01</span><strong>Monitor</strong><small>Capture safety signals</small></div>
-            <div className="login-story-stat"><span>02</span><strong>Understand</strong><small>Connect events to context</small></div>
-            <div className="login-story-stat"><span>03</span><strong>Improve</strong><small>Turn insight into action</small></div>
-          </div>
+      <section className="auth-card" aria-labelledby="auth-heading">
+        <div className="auth-card-title">
+          <h1 id="auth-heading">{heading}</h1>
+          <p>{recoveryMode ? 'Choose a new password for your account.' :
+              forgot ? 'We will email you a password reset link.' :
+              'Welcome to Halo.'}</p>
         </div>
 
-        <section className="login-card" aria-labelledby="login-card-heading">
-          <div className="login-card-top">
-            <span className="login-card-icon"><ShieldCheck size={22} strokeWidth={1.8}/></span>
-            <span className="login-card-indicator"><span /> WORKSPACE ACCESS</span>
-          </div>
-          <div className="login-card-heading">
-            <span className="login-card-kicker">WELCOME TO HALO</span>
-            <h2 id="login-card-heading">Welcome back<span>.</span></h2>
-            <p>Sign in to your safety intelligence workspace.</p>
-          </div>
-
-          <div className="login-fields" aria-label="Future account sign-in preview">
-            <div className="login-fields-caption"><span>ACCOUNT SIGN-IN</span><span>COMING SOON</span></div>
-            <label htmlFor="halo-email-preview">Work email</label>
-            <div className="login-field-disabled">
-              <Mail size={17} />
-              <input id="halo-email-preview" type="email" placeholder="name@company.com" autoComplete="off" disabled />
+        <form onSubmit={(event) => { void submit(event); }}>
+          {!recoveryMode && (
+            <div className="auth-field">
+              <label htmlFor="auth-email">Email</label>
+              <input
+                id="auth-email"
+                type="email"
+                autoComplete="email"
+                placeholder="name@company.com"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                required
+                disabled={!configured || busy}
+              />
             </div>
-            <label htmlFor="halo-password-preview">Password</label>
-            <div className="login-field-disabled">
-              <LockKeyhole size={17} />
-              <input id="halo-password-preview" type="password" placeholder="••••••••" autoComplete="off" disabled />
-            </div>
-          </div>
+          )}
 
-          <div className="login-demo-section">
-            <p><Sparkles size={15}/> For now, explore Halo with a demo workspace.</p>
-            <button className="login-demo-button" type="button" onClick={onContinue}>
-              Enter demo workspace <ArrowRight size={18} />
+          {!forgot && (
+            <div className="auth-field">
+              <label htmlFor="auth-password">{recoveryMode ? 'New password' : 'Password'}</label>
+              <div className="auth-password-wrap">
+                <input
+                  id="auth-password"
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete={recoveryMode ? 'new-password' : 'current-password'}
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  minLength={recoveryMode ? 8 : undefined}
+                  required
+                  disabled={!configured || busy}
+                />
+                <button
+                  type="button"
+                  className="auth-eye"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  aria-pressed={showPassword}
+                  onClick={() => setShowPassword(v => !v)}
+                >
+                  {showPassword ? <EyeOff size={18}/> : <Eye size={18}/>}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {!recoveryMode && !forgot && (
+            <button className="auth-forgot-link" type="button" onClick={() => { setView('forgot'); setError(''); setNotice(''); }}>
+              Forgot password?
             </button>
-            <span>No password required. Demo access does not authenticate an account.</span>
-          </div>
+          )}
 
-          <div className="login-card-footer">
-            <ShieldCheck size={16}/>
-            <span>Prototype environment · simulated data</span>
-          </div>
-        </section>
-      </div>
+          {error && <p className="auth-error" role="alert">{error}</p>}
+          {notice && <p className="auth-notice" role="status">{notice}</p>}
+          {!configured && (
+            <p className="auth-error" role="alert">
+              Sign-in is not configured yet. Contact the Halo administrator.
+            </p>
+          )}
 
-      <footer className="login-site-footer">
-        <span>© HALO SAFETY · PROTOTYPE</span>
-        <span className="login-footer-center">INTELLIGENCE FOR SAFER WORKPLACES</span>
-        <button type="button" className="login-motion-toggle" aria-pressed={motionEnabled} onClick={onMotionChange}>
-          {motionEnabled ? <Pause size={14}/> : <Play size={14}/>}
-          {motionEnabled ? 'Pause motion' : 'Play motion'}
-        </button>
-      </footer>
+          <button className="auth-submit" type="submit" disabled={!configured || busy}>
+            {busy ? 'Please wait…' : recoveryMode ? 'Save password' : forgot ? 'Send reset link' : 'Sign in'}
+            <ArrowRight size={18}/>
+          </button>
+          {forgot && (
+            <button className="auth-back" type="button" onClick={() => { setView('login'); setError(''); setNotice(''); }}>
+              Back to sign in
+            </button>
+          )}
+        </form>
+      </section>
     </main>
   );
 }
