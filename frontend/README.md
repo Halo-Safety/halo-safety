@@ -40,3 +40,12 @@ The geometric background is mounted only on the sign-in and password-recovery sc
 ```powershell
 npm run build
 ```
+
+
+## Integrated scenario lab (browser-only)
+
+The Simulation page now uses the same light visual system as the rest of Halo. The original worker/vehicle geometry, routes, speed controls, blind-zone editing, and warning logic remain in `public/simulator/`. The embedded iframe is kept mounted while switching between Overview and Simulation, so scenarios are not reset simply by navigating.
+
+On a warning transition, the simulator sends a same-origin `postMessage` to the parent. The parent validates the message origin and exact iframe window, then adds one `PROXIMITY_ALERT` or `ALERT_CLEAR` to an **in-memory sandbox timeline**. A separate Simulation activity panel appears on Overview. The iframe reports its content height, removing the previous hard-coded scrolling region.
+
+**Isolation:** sandbox events are neither written to Supabase nor counted as recorded sensor signals or active production warnings. They are cleared on browser reload and must never be presented as actual incidents. Device ingestion remains future work.
