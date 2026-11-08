@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import { getEvents } from './api';
 import { eventType, type SensorEvent } from './types';
-import SafetyWorkspace from './SafetyWorkspace';
+import SafetyModule from './SafetyModule';
 
 const POLL_INTERVAL_MS = 3000;
 
@@ -217,7 +217,7 @@ export default function App({ onExit, userEmail }: AppProps) {
         </header>
 
         <div className="page-content">
-          {(caseView || vehicleView) && <SafetyWorkspace view={vehicleView ? 'vehicles' : 'cases'} isDemoAccount={isTestAccount}/>}
+          {(caseView || vehicleView) && <SafetyModule view={vehicleView ? 'vehicles' : 'cases'} isDemoAccount={isTestAccount}/>}
           <section className="simulator-page" aria-labelledby="simulation-heading" hidden={!simulationView}>
             <div className="simulation-heading">
               <div>
