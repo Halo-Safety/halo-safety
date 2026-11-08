@@ -45,8 +45,9 @@ export default function Experience() {
         setUser(null);
         setInitializing(false);
       } else {
-        // Validate with Supabase Auth; never grant access from sessionStorage alone.
-        verifyUser();
+        // Supabase emits auth callbacks synchronously. Defer getUser()
+        // until after the callback releases its internal auth lock.
+        window.setTimeout(verifyUser, 0);
       }
     });
 
