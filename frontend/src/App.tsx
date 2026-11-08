@@ -199,9 +199,13 @@ export default function App({ onExit, userEmail }: AppProps) {
         <header className="topbar">
           <div className="breadcrumb"><span>HALO</span><span className="breadcrumb-separator">/</span><strong>{simulationView ? 'Scenario lab' : caseView ? 'Cases' : vehicleView ? 'Vehicles' : 'Overview'}</strong></div>
           <div className="topbar-right">
-            <span className={'api-pill ' + (apiOnline ? 'online' : 'offline')}>
+            <span
+              className={'api-pill ' + (apiOnline ? 'online' : 'offline')}
+              title="Cloud status reflects the Supabase event query, not ESP32 device connectivity."
+              aria-label={apiOnline ? 'Cloud connected' : 'Cloud unavailable'}
+            >
               {apiOnline ? <Wifi size={15}/> : <WifiOff size={15}/>}
-              {apiOnline ? 'Connected' : 'Unavailable'}
+              {apiOnline ? 'Cloud connected' : 'Cloud unavailable'}
             </span>
             <button type="button" className="icon-button" onClick={() => { setRefreshing(true); void refresh(); }} title="Refresh data" aria-label="Refresh data" disabled={refreshing}>
               <RefreshCw className={refreshing ? 'spin' : ''} size={18}/>
