@@ -1,0 +1,5 @@
+Flask>=3.1,<4
+Flask-SocketIO>=5.5,<6
+flask-cors>=6.0,<7
+pyserial>=3.5,<4
+requests>=2.32,<3
