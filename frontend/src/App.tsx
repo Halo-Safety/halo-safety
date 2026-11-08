@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Activity, AlertTriangle, BarChart3, CheckCircle2,
-  Clock3, Database, HardHat, RefreshCw, Route, ShieldCheck, Wifi, WifiOff, LogOut,
+  Clock3, Database, HardHat, RefreshCw, Route, ShieldCheck, Wifi, WifiOff, LogOut, ClipboardCheck, Truck,
 } from 'lucide-react';
 import { getEvents } from './api';
 import { eventType, type SensorEvent } from './types';
+import SafetyModule from './SafetyModule';
 
 const POLL_INTERVAL_MS = 3000;
 
@@ -92,7 +93,11 @@ export default function App({ onExit, userEmail }: AppProps) {
   const [error, setError] = useState<string | null>(null);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const [simulationView, setSimulationView] = useState(() => window.location.hash === '#simulation');
+  const [view, setView] = useState(() => window.location.hash.replace(/^#/, '') || 'overview');
+  const simulationView = view === 'simulation';
+  const caseView = view === 'cases';
+  const vehicleView = view === 'vehicles';
+  const isTestAccount = userEmail.trim().toLowerCase() === 'test@ualberta.ca';
   const simulatorFrame = useRef<HTMLIFrameElement>(null);
   const eventSequence = useRef(0);
   const [simulationEvents, setSimulationEvents] = useState<SimulationEvent[]>([]);
@@ -100,7 +105,7 @@ export default function App({ onExit, userEmail }: AppProps) {
   const [simulatorHeight, setSimulatorHeight] = useState(1030);
 
   useEffect(() => {
-    const onHashChange = () => setSimulationView(window.location.hash === '#simulation');
+    const onHashChange = () => setView(window.location.hash.replace(/^#/, '') || 'overview');
     window.addEventListener('hashchange', onHashChange);
     return () => window.removeEventListener('hashchange', onHashChange);
   }, []);
@@ -181,7 +186,9 @@ export default function App({ onExit, userEmail }: AppProps) {
           <a className={"nav-link" + (!simulationView ? " selected" : "")} href="#overview"><BarChart3 size={18} /> Overview</a>
           <a className="nav-link" href="#alerts"><AlertTriangle size={18} /> Active alerts <span className="nav-count">{active.length}</span></a>
           <a className="nav-link" href="#history"><Database size={18} /> Event history</a>
-          <a className={"nav-link" + (simulationView ? " selected" : "")} href="#simulation"><Route size={18} /> Simulation {simulatedAlerts > 0 && <span className="nav-count">{simulatedAlerts}</span>}</a>
+          <a className={'nav-link' + (caseView ? ' selected' : '')} href="#cases"><ClipboardCheck size={18}/> Cases</a>
+          <a className={'nav-link' + (vehicleView ? ' selected' : '')} href="#vehicles"><Truck size={18}/> Vehicles</a>
+          <a className={'nav-link' + (simulationView ? ' selected' : '')} href="#simulation"><Route size={18} /> Simulation {simulatedAlerts > 0 && <span className="nav-count">{simulatedAlerts}</span>}</a>
         </nav>
         <div className="sidebar-bottom">
           <div className="signed-in-user" title={userEmail}>{userEmail}</div>
@@ -190,11 +197,15 @@ export default function App({ onExit, userEmail }: AppProps) {
 
       <main className="main-content" id="overview">
         <header className="topbar">
-          <div className="breadcrumb"><span>HALO</span><span className="breadcrumb-separator">/</span><strong>{simulationView ? "Scenario lab" : "Overview"}</strong></div>
+          <div className="breadcrumb"><span>HALO</span><span className="breadcrumb-separator">/</span><strong>{simulationView ? 'Scenario lab' : caseView ? 'Cases' : vehicleView ? 'Vehicles' : 'Overview'}</strong></div>
           <div className="topbar-right">
-            <span className={'api-pill ' + (apiOnline ? 'online' : 'offline')}>
+            <span
+              className={'api-pill ' + (apiOnline ? 'online' : 'offline')}
+              title="Cloud status reflects the Supabase event query, not ESP32 device connectivity."
+              aria-label={apiOnline ? 'Cloud connected' : 'Cloud unavailable'}
+            >
               {apiOnline ? <Wifi size={15}/> : <WifiOff size={15}/>}
-              {apiOnline ? 'Connected' : 'Unavailable'}
+              {apiOnline ? 'Cloud connected' : 'Cloud unavailable'}
             </span>
             <button type="button" className="icon-button" onClick={() => { setRefreshing(true); void refresh(); }} title="Refresh data" aria-label="Refresh data" disabled={refreshing}>
               <RefreshCw className={refreshing ? 'spin' : ''} size={18}/>
@@ -206,6 +217,7 @@ export default function App({ onExit, userEmail }: AppProps) {
         </header>
 
         <div className="page-content">
+          {(caseView || vehicleView) && <SafetyModule view={vehicleView ? 'vehicles' : 'cases'} isDemoAccount={isTestAccount}/>}
           <section className="simulator-page" aria-labelledby="simulation-heading" hidden={!simulationView}>
             <div className="simulation-heading">
               <div>
@@ -261,7 +273,7 @@ export default function App({ onExit, userEmail }: AppProps) {
                   </div>}
             </section>
           </section>
-          {!simulationView && (
+          {!simulationView && !caseView && !vehicleView && (
             <>
           <div className="page-heading">
             <div><h1 className="display-heading">Overview</h1></div>
