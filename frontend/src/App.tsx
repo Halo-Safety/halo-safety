@@ -3,11 +3,11 @@ import {
   Activity, AlertTriangle, ArrowRight, BarChart3, CheckCircle2, CircleHelp,
   Clock3, Database, HardHat, RadioTower, RefreshCw, ShieldCheck, Wifi, WifiOff,
 } from 'lucide-react';
-import { getEvents, getStatus, sendDemoAlert } from './api';
+import { getEvents, getStatus, sendDemoAlert, isDemoMode } from './api';
 import { eventType, type SensorEvent } from './types';
 
 const POLL_INTERVAL_MS = 3000;
-const demoEnabled = import.meta.env.VITE_ENABLE_DEMO === 'true';
+const demoEnabled = isDemoMode || import.meta.env.VITE_ENABLE_DEMO === 'true';
 
 function eventDate(value?: string): Date | null {
   if (!value) return null;
@@ -150,9 +150,9 @@ export default function App() {
         <header className="topbar">
           <div className="breadcrumb"><span>Workspace</span><ArrowRight size={14}/><strong>Overview</strong></div>
           <div className="topbar-right">
-            <span className={'api-pill ' + (apiOnline ? 'online' : 'offline')}>
-              {apiOnline ? <Wifi size={15}/> : <WifiOff size={15}/>}
-              {apiOnline ? 'API connected' : 'API unavailable'}
+            <span className={'api-pill ' + (isDemoMode ? 'demo' : apiOnline ? 'online' : 'offline')}>
+              {isDemoMode ? <RadioTower size={15}/> : apiOnline ? <Wifi size={15}/> : <WifiOff size={15}/>}
+              {isDemoMode ? 'Demo mode' : apiOnline ? 'API connected' : 'API unavailable'}
             </span>
             <button type="button" className="icon-button" onClick={() => { setRefreshing(true); void refresh(); }} title="Refresh data" aria-label="Refresh data" disabled={refreshing}>
               <RefreshCw className={refreshing ? 'spin' : ''} size={18}/>
@@ -167,10 +167,15 @@ export default function App() {
               <h1>Safety overview</h1>
               <p>Monitor proximity events and review activity across your equipment.</p>
             </div>
-            {demoEnabled && <button type="button" className="primary-button" onClick={() => void generateDemo()} disabled={sendingDemo || !apiOnline}>
+            {demoEnabled && <button type="button" className="primary-button" onClick={() => void generateDemo()} disabled={sendingDemo || (!isDemoMode && !apiOnline)}>
               <RadioTower size={17} /> {sendingDemo ? 'Sending...' : 'Generate demo alert'}
             </button>}
           </div>
+
+          {isDemoMode && <div className="demo-banner" role="status">
+            <RadioTower size={18}/>
+            <span><strong>Demonstration environment.</strong> All events are simulated and stored only in this browser. No devices, live monitoring, or cloud database are connected.</span>
+          </div>}
 
           {error && <div className="error-banner" role="alert">
             <AlertTriangle size={20} /><span>Unable to load live data: {error}. Start the Flask API locally or configure VITE_API_BASE_URL for a deployed backend.</span>
@@ -242,7 +247,7 @@ export default function App() {
                 </div>
               )}
               <div className="panel-foot">
-                <span><span className="live-indicator" /> Refreshes every 3 seconds</span>
+                <span><span className="live-indicator" /> {isDemoMode ? 'Browser-local simulated events' : 'Refreshes every 3 seconds'}</span>
               </div>
             </section>
           </div>
@@ -267,10 +272,10 @@ export default function App() {
                   ))}
                 </tbody>
               </table>
-              {ordered.length === 0 && <div className="empty-table">No events recorded yet. Start the Flask backend and submit a device event to populate this table.</div>}
+              {ordered.length === 0 && <div className="empty-table">{isDemoMode ? 'No demo events. Generate a simulated alert to start.' : 'No events recorded yet. Start the Flask backend and submit a device event to populate this table.'}</div>}
             </div>
           </section>
-          <footer className="footer"><span><ShieldCheck size={15}/> Halo Safety · Operational prototype</span><span>{lastUpdate ? 'Last synced ' + lastUpdate.toLocaleTimeString() : 'Waiting for first sync'}</span></footer>
+          <footer className="footer"><span><ShieldCheck size={15}/> Halo Safety · Operational prototype</span><span>{lastUpdate ? (isDemoMode ? 'Demo refreshed ' : 'Last synced ') + lastUpdate.toLocaleTimeString() : 'Waiting for first sync'}</span></footer>
         </div>
       </main>
     </div>
