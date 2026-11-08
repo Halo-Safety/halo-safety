@@ -1,4 +1,6 @@
+import os
 from flask import Flask, render_template, jsonify, request
+from flask_cors import CORS
 from flask_socketio import SocketIO
 from threading import Thread
 
@@ -10,8 +12,15 @@ from database import (
 
 from serial_reader import start_serial_reader
 app = Flask(__name__)
-app.config["SECRET_KEY"] = "halo_demo_key"
-socketio = SocketIO(app, cors_allowed_origins="*")
+app.config["SECRET_KEY"] = os.getenv("HALO_SECRET_KEY", "halo_demo_key")
+
+# Allow the Vite development server and an explicitly configured hosted React origin.
+allowed_origins = [origin.strip() for origin in os.getenv(
+    "HALO_ALLOWED_ORIGINS",
+    "http://localhost:5173,http://127.0.0.1:5173,http://localhost:5000,http://127.0.0.1:5000"
+).split(",") if origin.strip()]
+CORS(app, resources={r"/api/*": {"origins": allowed_origins}})
+socketio = SocketIO(app, cors_allowed_origins=allowed_origins)
 
 
 def _require_text(data, field):
@@ -50,12 +59,18 @@ def process_device_event(data):
 @app.route("/")
 def home():
     return render_template("index.html")
+
+
 @app.route("/api/events")
 def events():
     return jsonify(get_events())
+
+
 @app.route("/api/status")
 def status():
     return jsonify({"dashboard": "online", "machine": "connected"})
+
+
 @app.route("/api/demo-alert", methods=["POST"])
 def demo_alert():
     data = {
@@ -86,8 +101,8 @@ def main():
     initialize_database()
     # Change COM3 to the actual ESP32 serial port.
     Thread(target=start_serial_reader, args=(socketio, "COM3"), daemon=True).start()
-
     socketio.run(app, host="127.0.0.1", port=5000, debug=False)
+
 
 if __name__ == "__main__":
     main()
