@@ -68,7 +68,7 @@ def events():
 
 @app.route("/api/status")
 def status():
-    return jsonify({"dashboard": "online", "machine": "connected"})
+    return jsonify({"dashboard": "online", "machine": "port_configured" if os.getenv("HALO_SERIAL_PORT") else "not_configured"})
 
 
 @app.route("/api/demo-alert", methods=["POST"])
@@ -99,8 +99,12 @@ def device_event():
 
 def main():
     initialize_database()
-    # Change COM3 to the actual ESP32 serial port.
-    Thread(target=start_serial_reader, args=(socketio, "COM3"), daemon=True).start()
+    # Serial is OFF by default. To enable it later:
+    #   $env:HALO_SERIAL_PORT = "COM3"
+    # Do not require an ESP32 to serve the web API.
+    serial_port = os.getenv("HALO_SERIAL_PORT", "").strip()
+    if serial_port:
+        Thread(target=start_serial_reader, args=(socketio, serial_port), daemon=True).start()
     socketio.run(app, host="127.0.0.1", port=5000, debug=False)
 
 
