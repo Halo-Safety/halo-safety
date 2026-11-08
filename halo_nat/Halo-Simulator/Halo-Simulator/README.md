@@ -33,4 +33,8 @@ The sample loader is ready to move as soon as you open the app. Its starting pro
 4. Choose **Play**. Both start together and stop at their own final waypoint. The vehicle faces the next leg as it turns, carrying its zones with it. The log records crossings in simulation seconds.
 5. Use **Pause** and **Resume** to inspect the interaction. **Reset run** restores the pre-run positions, clears the log, and keeps the paths for another run.
 
+The **Front danger zone** is a rectangle spanning the vehicle's width and extending the configured distance ahead of it (3 m by default). It is active only while the vehicle is moving during playback; pausing or completing the vehicle's route deactivates it. The worker's centre must enter the displayed area to trigger a warning.
+
 Uploaded diagrams use the calibrated scale. The sample uses an illustrative 20 image pixels per metre. Turns happen at the waypoints and the simulation samples positions during playback.
+
+This is a configurable simulator, not a validated or certified vehicle safety system. Validate zone dimensions, positioning accuracy, and alert timing under real operating conditions before relying on any safety system.

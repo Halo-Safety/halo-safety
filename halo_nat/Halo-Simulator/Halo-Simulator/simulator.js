@@ -18,7 +18,9 @@ let pixelsPerMetre;
 let worker = { x: 190, y: 240 };
 const activeEvents = new Map();
 const clearanceEvent = { name: 'Vehicle clearance zone' };
+const frontDangerEvent = { name: 'Moving vehicle front danger zone' };
 let clearance = 0.5;
+let frontZoneDistance = 3;
 let dragging = false;
 let imageRequest = 0;
 let referenceLoaded = false;
@@ -70,6 +72,24 @@ function vehicleOutline() {
   return [{ x: -x, y: -y }, { x, y: -y }, { x, y }, { x: -x, y }];
 }
 
+function vehicleFrontZone() {
+  const scale = pixelsPerMetre || 20;
+  const outline = vehicleOutline();
+  const front = Math.min(...outline.map(point => point.y));
+  const halfWidth = vehicle.width * scale / 2;
+  return [
+    { x: -halfWidth, y: front - frontZoneDistance * scale },
+    { x: halfWidth, y: front - frontZoneDistance * scale },
+    { x: halfWidth, y: front },
+    { x: -halfWidth, y: front },
+  ];
+}
+
+function vehicleIsMoving() {
+  return Boolean(run?.playing && run.vehicle.speed > 0
+    && run.vehicle.segments.length > 0 && run.elapsed < run.vehicle.duration);
+}
+
 function distanceToOutline(point, outline) {
   if (contains(point, outline)) return 0;
   let nearest = Infinity;
@@ -89,11 +109,15 @@ function updateAlert() {
   const relativeWorker = vehicle && localPoint(worker, vehicle);
   const occupied = relativeWorker ? zones.filter(zone => contains(relativeWorker, zone.points)) : [];
   const inBlindZone = occupied.length > 0;
+  const inFrontDangerZone = relativeWorker && vehicleIsMoving()
+    && contains(relativeWorker, vehicleFrontZone());
+  if (inFrontDangerZone) occupied.push(frontDangerEvent);
   const tooClose = relativeWorker
     && distanceToOutline(relativeWorker, vehicleOutline()) <= (clearance + 0.25) * (pixelsPerMetre || 20);
   if (tooClose) occupied.push(clearanceEvent);
   const warnings = [];
   if (inBlindZone) warnings.push('Worker in blind zone.');
+  if (inFrontDangerZone) warnings.push('Worker in the danger zone in front of a moving vehicle.');
   if (tooClose) warnings.push('Worker too close to vehicle.');
   get('driver').textContent = warnings.length ? 'Stop. ' + warnings.join(' ') : 'No active warning';
   get('walker').textContent = warnings.length ? 'Step clear of the vehicle.' : 'No active warning';
@@ -151,6 +175,8 @@ function draw() {
     const halfLength = vehicle.length * scale / 2;
     get('vehicle-pose').setAttribute('transform',
       'translate(' + vehicle.x + ' ' + vehicle.y + ') rotate(' + vehicle.heading + ')');
+    get('vehicle-front-zone').setAttribute('points', points(vehicleFrontZone()));
+    get('vehicle-front-zone').setAttribute('visibility', vehicleIsMoving() ? 'visible' : 'hidden');
     const outline = points(vehicleOutline());
     get('vehicle-body').setAttribute('points', outline);
     get('vehicle-clearance').setAttribute('points', outline);
@@ -380,6 +406,7 @@ get('play').onclick = () => {
 get('pause').onclick = () => {
   run.playing = false;
   cancelAnimationFrame(frame);
+  draw();
   status.textContent = 'Paused. Resume to continue or reset to edit the scenario.';
   renderPlayback();
 };
@@ -424,6 +451,17 @@ get('clearance').onchange = event => {
     return;
   }
   clearance = value;
+  draw();
+};
+get('front-zone-distance').onchange = event => {
+  const raw = event.target.value.trim();
+  const value = Number(raw);
+  if (!raw || !Number.isFinite(value) || value <= 0) {
+    event.target.value = frontZoneDistance;
+    status.textContent = 'Enter a positive front danger zone length in metres.';
+    return;
+  }
+  frontZoneDistance = value;
   draw();
 };
 get('move').onclick = () => setMode('move', 'Tap or drag on the map to move the worker.');

@@ -37,7 +37,7 @@
 <header>
   <span class="tag">Simulation</span>
   <h1>Halo Blind Spot Simulator</h1>
-  <p>Place a worker on a vehicle diagram and see when they enter a traced blind zone.</p>
+  <p>Trace blind zones and simulate movement to see when a worker enters a danger area.</p>
 </header>
 <main>
   <section aria-label="Simulator controls and map">
@@ -64,6 +64,8 @@
       <button id="vehicle-move">Move vehicle</button>
       <label for="clearance">Warning clearance (m)</label>
       <input id="clearance" type="number" min="0" step="0.1" value="0.5">
+      <label for="front-zone-distance">Front danger zone (m)</label>
+      <input id="front-zone-distance" type="number" min="0.1" step="0.1" value="3">
       <label for="heading">Heading <output id="heading-value">0°</output></label>
       <input id="heading" type="range" min="0" max="359" value="0">
       <label><input id="reference-visible" type="checkbox" disabled> Show reference image</label>
@@ -103,6 +105,8 @@
       <polyline id="vehicle-route" fill="none" stroke="#864618" stroke-width="3" stroke-dasharray="7 4" vector-effect="non-scaling-stroke"/>
       <g id="vehicle-pose">
         <g id="zones" fill="#ef7276" fill-opacity=".32" stroke="#b52836" stroke-width="2"/>
+        <polygon id="vehicle-front-zone" fill="#d95e29" fill-opacity=".3"
+          stroke="#b24a1f" stroke-width="2" stroke-dasharray="5 3" visibility="hidden"/>
         <polygon id="vehicle-clearance" fill="none" stroke="#eaa237" stroke-opacity=".4" stroke-linejoin="round"/>
         <polygon id="vehicle-body" fill="#365d7b" fill-opacity=".85" stroke="#173650" vector-effect="non-scaling-stroke"/>
         <polygon id="vehicle-front" fill="#b3d8ef"/>
@@ -116,6 +120,7 @@
       <span style="--swatch: #365d7b">Vehicle</span>
       <span style="--swatch: #145d9b">Worker</span>
       <span style="--swatch: #b52836">Blind zone</span>
+      <span style="--swatch: #d95e29">Moving front danger zone</span>
       <span style="--swatch: #eaa237">Vehicle clearance</span>
       <span style="--swatch: #864618">Vehicle route</span>
     </div>
