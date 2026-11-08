@@ -84,6 +84,9 @@ The `Simulation` link in the React sidebar opens the teammate's browser-based bl
 
 The original simulator at `halo_nat/Halo-Simulator/Halo-Simulator/` remains unchanged. Upstream changes there must be deliberately synchronized with the public copy; this is an integration snapshot. For real server-stored incidents, implement authenticated API ingestion separately. Do not treat animated intersections as real near misses.
 
-## Visual design: Halo Aurora
-The React shell uses an original minimalist dark-glass style with a low-cost CSS-only animated aurora and subtle grid. The motion toggle in the top bar pauses the background. Browser `prefers-reduced-motion` disables decorative motion by default.
-The simulator remains the teammate's existing iframe/geometry implementation; only its presentation styles changed. No external images, shaders or animation dependencies are required.
+## Visual design: geometric background and demo welcome
+The React experience opens with a light login-inspired card over a continuously animated triangular wireframe mesh and rotating 3D geometric forms drawn with Canvas 2D. The same background sits behind the Dashboard and Simulation. Motion can be paused with a UI control; the browser's `prefers-reduced-motion` is respected by default.
+
+**There is no real authentication yet.** The work-email and password fields are disabled previews, and **Enter demo workspace** opens the dashboard as an unauthenticated browser-local guest session (sessionStorage). **Exit demo** returns to the welcome screen. Nothing in this flow restricts API or simulator URLs; real sign-in requires a supported authentication provider, server-side session validation and access control. Do not enter real passwords into this prototype.
+
+The simulator remains the teammate's existing iframe/geometry implementation; its movement and detection logic is untouched.

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Activity, AlertTriangle, ArrowRight, BarChart3, CheckCircle2, CircleHelp,
-  Clock3, Database, HardHat, RadioTower, RefreshCw, Route, ShieldCheck, Wifi, WifiOff, Play, Pause, ArrowUpRight, Sparkles,
+  Clock3, Database, HardHat, RadioTower, RefreshCw, Route, ShieldCheck, Wifi, WifiOff, Play, Pause, LogOut,
 } from 'lucide-react';
 import { getEvents, getStatus, sendDemoAlert, isDemoMode, appendSimulationEvent } from './api';
 import { eventType, type SensorEvent } from './types';
@@ -75,16 +75,19 @@ function EventBadge({ type }: { type: string }) {
   );
 }
 
-export default function App() {
+type AppProps = {
+  motionEnabled: boolean;
+  onMotionChange: () => void;
+  onExit: () => void;
+};
+
+export default function App({ motionEnabled, onMotionChange, onExit }: AppProps) {
   const [events, setEvents] = useState<SensorEvent[]>([]);
   const [apiOnline, setApiOnline] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [sendingDemo, setSendingDemo] = useState(false);
-  const [motionEnabled, setMotionEnabled] = useState(() =>
-    !window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  );
   const [simulationView, setSimulationView] = useState(() => window.location.hash === '#simulation');
   const simulatorFrame = useRef<HTMLIFrameElement | null>(null);
 
@@ -155,14 +158,7 @@ export default function App() {
   }
 
   return (
-    <div className={"app-shell" + (motionEnabled ? "" : " motion-paused")}>
-      <div className="ambient-backdrop" aria-hidden="true">
-        <div className="ambient-aurora aurora-one" />
-        <div className="ambient-aurora aurora-two" />
-        <div className="ambient-aurora aurora-three" />
-        <div className="ambient-grid" />
-        <div className="ambient-vignette" />
-      </div>
+    <div className="app-shell">
       <aside className="sidebar">
         <a className="brand" href="#overview" aria-label="Halo dashboard">
           <span className="brand-symbol"><ShieldCheck size={23} strokeWidth={1.65} /></span>
@@ -189,12 +185,15 @@ export default function App() {
               {isDemoMode ? <RadioTower size={15}/> : apiOnline ? <Wifi size={15}/> : <WifiOff size={15}/>}
               {isDemoMode ? 'Demo mode' : apiOnline ? 'API connected' : 'API unavailable'}
             </span>
-            <button type="button" className="motion-button" aria-pressed={motionEnabled} onClick={() => setMotionEnabled(enabled => !enabled)} title={motionEnabled ? 'Pause background animation' : 'Resume background animation'}>
+            <button type="button" className="motion-button" aria-pressed={motionEnabled} onClick={onMotionChange} title={motionEnabled ? 'Pause background animation' : 'Resume background animation'}>
               {motionEnabled ? <Pause size={14}/> : <Play size={14}/>}
               <span>Motion {motionEnabled ? 'on' : 'off'}</span>
             </button>
             <button type="button" className="icon-button" onClick={() => { setRefreshing(true); void refresh(); }} title="Refresh data" aria-label="Refresh data" disabled={refreshing}>
               <RefreshCw className={refreshing ? 'spin' : ''} size={18}/>
+            </button>
+            <button type="button" className="workspace-exit-button" onClick={onExit} title="Return to the welcome screen">
+              <LogOut size={15}/><span>Exit demo</span>
             </button>
           </div>
         </header>
