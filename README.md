@@ -7,7 +7,7 @@
 
 *natHacks 2026 · Construction & Manufacturing*
 
-[**Web App**](https://halo-safety.vercel.app) · [**Simulation**](https://halo-safety.vercel.app/#simulation) · [**Project Roadmap**](roadmap.md)
+[**FTM cloud gateway setup**](docs/ftm-cloud-uplink.md) · [**Web App**](https://halo-safety.vercel.app) · [**Simulation**](https://halo-safety.vercel.app/#simulation) · [**Project Roadmap**](roadmap.md)
 
 <sub>The web app requires an invited account.</sub>
 
