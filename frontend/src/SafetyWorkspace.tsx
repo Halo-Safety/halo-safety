@@ -204,7 +204,7 @@ function CaseDetails({ selected, onReviewCase, sessionCase }: {
       </div>
     </>}
     {impact && before !== null && after !== null && <div className="safety-impact">
-      <h3>Intervention follow-up (sample)</h3>
+      <h3>Intervention follow-up</h3>
       <div className="safety-rate-row"><span>Before</span><strong>{before.toFixed(1)} alerts / 100 vehicle-hours</strong></div>
       <div className="safety-rate-row"><span>After</span><strong>{after.toFixed(1)} alerts / 100 vehicle-hours</strong></div>
       <small>Exposure-adjusted alert rates based on {impact.beforeAlerts} alerts / {impact.beforeHours} h and {impact.afterAlerts} alerts / {impact.afterHours} h. Not injury rates or evidence of causality.</small>
