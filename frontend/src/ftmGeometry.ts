@@ -74,24 +74,108 @@ export function validateLayout(layout: FtmLayout): string | null {
 }
 
 /**
- * Match halo_nat/worker_locator.py: subtract squared range equations,
- * solve for XY, and report full-range residual plus worst ±error sensitivity.
- * Three ranges are not enough to guarantee reliable positioning.
+ * Nonlinear least-squares trilateration, matching the objective of
+ * halo_nat/locator.py (SciPy least_squares):
+ *
+ *   minimize sum_i (hypot(x - anchor[i].x, y - anchor[i].y) - range[i])^2
+ *
+ * A damped Gauss-Newton / Levenberg-Marquardt optimizer solves the 2D
+ * problem in-browser without requiring SciPy or changing the gateway.
+ * The old linear solution is only an initial guess, NOT the final estimate.
  */
-function solve(anchors: readonly Anchor[], distances: readonly number[]): [number, number] | null {
+function squaredRangeError(
+  anchors: readonly Anchor[], distances: readonly number[], x: number, y: number,
+): number {
+  let sum = 0;
+  for (let i = 0; i < anchors.length; i++) {
+    const residual = Math.hypot(x - anchors[i].x, y - anchors[i].y) - distances[i];
+    sum += residual * residual;
+  }
+  return sum;
+}
+
+function linearInitialGuess(anchors: readonly Anchor[], distances: readonly number[]): [number, number] | null {
   const [p0, p1, p2] = anchors;
   const [r0, r1, r2] = distances;
-  const a = p1.x - p0.x;
-  const b = p1.y - p0.y;
-  const c = p2.x - p0.x;
-  const d = p2.y - p0.y;
-  const determinant = a * d - b * c;
-  if (!Number.isFinite(determinant) || Math.abs(determinant) < 0.01) return null;
+  const a = p1.x - p0.x, b = p1.y - p0.y;
+  const c = p2.x - p0.x, d = p2.y - p0.y;
+  const det = a * d - b * c;
+  if (Math.abs(det) < 0.01) return null;
   const u = ((r0 - r1) * (r0 + r1) + a * a + b * b) / 2;
   const v = ((r0 - r2) * (r0 + r2) + c * c + d * d) / 2;
-  const x = p0.x + (d * u - b * v) / determinant;
-  const y = p0.y + (a * v - c * u) / determinant;
+  const x = p0.x + (d * u - b * v) / det;
+  const y = p0.y + (a * v - c * u) / det;
   return Number.isFinite(x) && Number.isFinite(y) ? [x, y] : null;
+}
+
+function solve(anchors: readonly Anchor[], distances: readonly number[]): [number, number] | null {
+  if (distances.length !== 3 || distances.some(d => !Number.isFinite(d) || d < 0)) return null;
+  const centroid: [number, number] = [
+    anchors.reduce((sum, a) => sum + a.x, 0) / anchors.length,
+    anchors.reduce((sum, a) => sum + a.y, 0) / anchors.length,
+  ];
+  const linear = linearInitialGuess(anchors, distances);
+  // Multiple starting points protect against a stationary or poor local minimum,
+  // especially near an anchor or for contradictory FTM ranges.
+  const starts: [number, number][] = [
+    centroid,
+    ...(linear ? [linear] : []),
+    ...anchors.map(a => [a.x, a.y] as [number, number]),
+  ];
+  let best: [number, number] | null = null;
+  let bestCost = Infinity;
+
+  for (const [startX, startY] of starts) {
+    let x = startX, y = startY;
+    let cost = squaredRangeError(anchors, distances, x, y);
+    if (!Number.isFinite(cost)) continue;
+    let lambda = 0.01;
+
+    for (let iteration = 0; iteration < 80; iteration++) {
+      let jxx = 0, jxy = 0, jyy = 0, gx = 0, gy = 0;
+      for (let i = 0; i < 3; i++) {
+        const dx = x - anchors[i].x, dy = y - anchors[i].y;
+        const distance = Math.hypot(dx, dy);
+        const residual = distance - distances[i];
+        // The derivative at distance=0 is undefined; let other anchors
+        // guide this iteration instead of producing NaNs.
+        const jx = distance > 1e-10 ? dx / distance : 0;
+        const jy = distance > 1e-10 ? dy / distance : 0;
+        jxx += jx * jx;
+        jxy += jx * jy;
+        jyy += jy * jy;
+        gx += jx * residual;
+        gy += jy * residual;
+      }
+      if (Math.hypot(gx, gy) < 1e-11) break;
+      const a = jxx + lambda, b = jxy, d = jyy + lambda;
+      const determinant = a * d - b * b;
+      if (!Number.isFinite(determinant) || determinant <= 1e-20) break;
+      const stepX = (d * gx - b * gy) / determinant;
+      const stepY = (a * gy - b * gx) / determinant;
+      const nextX = x - stepX, nextY = y - stepY;
+      const nextCost = squaredRangeError(anchors, distances, nextX, nextY);
+
+      if (Number.isFinite(nextCost) && nextCost < cost) {
+        const previousCost = cost;
+        x = nextX;
+        y = nextY;
+        cost = nextCost;
+        lambda = Math.max(1e-12, lambda / 3);
+        if (previousCost - nextCost < 1e-13 * Math.max(1, previousCost) &&
+            Math.hypot(stepX, stepY) < 1e-7) break;
+      } else {
+        lambda *= 10;
+        if (lambda > 1e12) break;
+      }
+    }
+
+    if (cost < bestCost && Number.isFinite(x) && Number.isFinite(y)) {
+      bestCost = cost;
+      best = [x, y];
+    }
+  }
+  return best;
 }
 
 export function estimateFtm(layout: FtmLayout, ranges: FtmRangeSet): FtmEstimate | null {
