@@ -288,7 +288,7 @@ export default function App({ onExit, userEmail }: AppProps) {
 
         <div className="page-content">
           {(caseView || vehicleView) && <SafetyModule view={vehicleView ? 'vehicles' : 'cases'} isDemoAccount={isTestAccount} sessionCases={sessionCases} preferredCaseId={preferredDemoCaseId} onReviewCase={saveDemoReview}/>}
-          {telemetryView && <TelemetryPage isDemoAccount={isTestAccount || import.meta.env.DEV}/>}
+          {telemetryView && <TelemetryPage/>}
           <section className="simulator-page" aria-labelledby="simulation-heading" hidden={!simulationView}>
             <div className="simulation-heading">
               <div>
