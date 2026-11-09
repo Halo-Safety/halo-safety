@@ -132,10 +132,6 @@ export default function SafetyWorkspace({ view, isDemoAccount, sessionCases = []
     <div className="safety-notice"><ShieldCheck size={17}/>
       <span><strong>Fictional demo data for the test account.</strong> These records are illustrative, are not imported from physical sensors, and are not stored in Supabase. No real incident or employee information is represented.</span>
     </div>
-    <nav className="safety-tabs" aria-label="Safety intelligence sections">
-      <a href="#cases" className={view === 'cases' ? 'active' : ''}><ClipboardCheck size={16}/> Cases</a>
-      <a href="#vehicles" className={view === 'vehicles' ? 'active' : ''}><Truck size={16}/> Vehicles</a>
-    </nav>
     <div className="safety-kpis">
       <div><span>Cases in sample</span><strong>{allCases.length}</strong><small>Includes unreviewed and invalid signals</small></div>
       <div><span>Awaiting review</span><strong>{needsReview}</strong><small>Human confirmation needed</small></div>
