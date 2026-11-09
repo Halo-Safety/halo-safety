@@ -290,7 +290,7 @@ export default function FtmAnchorMap({ vehicles, samples, now }: Props) {
             <Save size={15}/> {saving ? 'Saving…' : 'Save layout to Supabase'}
           </button>
         </div> : <p className="ftm-anchor-hint"><ShieldAlert size={15}/> Only organization admins and managers can change this configuration.</p>}
-        <div className="ftm-anchor-lab-note">Do not use these estimates to trigger physical safety interventions without validated hardware testing. Stored raw FTM samples are never modified by calibration changes.</div>
+        <div className="ftm-anchor-lab-note">Do not use these estimates to trigger physical safety interventions without validated hardware testing. Stored raw FTM readings are never modified by calibration changes.</div>
       </form>
     </div>
   </section>;
