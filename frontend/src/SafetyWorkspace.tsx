@@ -143,7 +143,7 @@ function ReviewEditor({ selected, sessionCase, onReviewCase }: {
         <p className="safety-review-hint">To {caseStatus.toLowerCase()} this case, set the corrective action status to Completed.</p>}
       {validation && <p className="safety-review-error" role="alert">{validation}</p>}
       <div className="safety-review-footer">
-        <span>{saved ? 'Review saved.' : 'Review and assign follow-up actions.'}</span>
+        <span>{saved ? 'Saved for this session.' : 'Review and assign follow-up actions.'}</span>
         <button type="submit" className="safety-review-save"><ClipboardCheck size={15}/> Save review</button>
       </div>
     </form>
