@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Activity, AlertTriangle, ArrowRight, BadgeCheck, Clock3, ClipboardCheck, HardHat, ShieldCheck, Truck } from 'lucide-react';
-import { demoCases, demoVehicles, type DemoCase } from './demoSafetyData';
+import { demoCases, demoVehicles, mergeDemoCases, type DemoCase, type DemoAction, type CaseClassification, type DemoReviewInput } from './demoSafetyData';
 import './SafetyWorkspace.css';
 
 type Props = {
@@ -8,7 +8,7 @@ type Props = {
   isDemoAccount: boolean;
   sessionCases?: DemoCase[];
   preferredCaseId?: string;
-  onAddDemoAction?: (caseId: string) => void;
+  onReviewCase?: (caseId: string, input: DemoReviewInput) => void;
 };
 type Filter = 'All' | 'Needs attention' | 'Reviewed near miss' | 'Other signals';
 
@@ -23,9 +23,102 @@ function statusClass(status: string) {
   return 'in-progress';
 }
 
-function CaseDetails({ selected, onAddDemoAction, sessionCase }: {
+function ReviewEditor({ selected, sessionCase, onReviewCase }: {
   selected: DemoCase;
-  onAddDemoAction?: (caseId: string) => void;
+  sessionCase: boolean;
+  onReviewCase?: (caseId: string, input: DemoReviewInput) => void;
+}) {
+  const [classification, setClassification] = useState<CaseClassification>(selected.classification);
+  const [reviewNote, setReviewNote] = useState(selected.reviewNote || '');
+  const [actionEnabled, setActionEnabled] = useState(Boolean(selected.recommendedAction));
+  const [actionTitle, setActionTitle] = useState(selected.recommendedAction?.title || 'Review blind-zone layout and pedestrian routing');
+  const [actionOwner, setActionOwner] = useState(selected.recommendedAction?.owner || 'Site safety manager');
+  const [actionDue, setActionDue] = useState(selected.recommendedAction?.due || (() => {
+    const date = new Date(); date.setDate(date.getDate() + 7);
+    return [date.getFullYear(), String(date.getMonth() + 1).padStart(2, '0'), String(date.getDate()).padStart(2, '0')].join('-');
+  })());
+  const [actionStatus, setActionStatus] = useState<DemoAction['status']>(selected.recommendedAction?.status || 'Open');
+  const [validation, setValidation] = useState('');
+  const [saved, setSaved] = useState(false);
+
+  function submit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!onReviewCase) return;
+    if (classification !== 'Candidate' && !reviewNote.trim()) {
+      setValidation('Write a short review note before choosing a final classification.');
+      return;
+    }
+    if (actionEnabled && (!actionTitle.trim() || !actionOwner.trim() || !actionDue)) {
+      setValidation('Please fill in the action, responsible person and due date.');
+      return;
+    }
+    const recommendedAction: DemoAction | null = actionEnabled
+      ? { title: actionTitle.trim(), owner: actionOwner.trim(), due: actionDue, status: actionStatus }
+      : null;
+    try {
+      onReviewCase(selected.id, { classification, reviewNote, recommendedAction });
+      setValidation('');
+      setSaved(true);
+    } catch (error) {
+      setValidation(error instanceof Error ? error.message : 'Could not update review.');
+    }
+  }
+
+  const touched = () => { setSaved(false); setValidation(''); };
+  return <details className="safety-review-editor" open={undefined} key={selected.id}>
+    <summary><span><ClipboardCheck size={16}/> Review & corrective action</span><small>{sessionCase ? 'Review new simulated observation' : 'Edit sample case'}</small></summary>
+    <form onSubmit={submit}>
+      <div className="safety-review-grid">
+        <label>Classification
+          <select value={classification} onChange={event => { setClassification(event.target.value as CaseClassification); touched(); }}>
+            <option value="Candidate">Candidate — needs review</option>
+            <option value="Reviewed near miss">Reviewed near miss</option>
+            <option value="False alarm">False alarm</option>
+            <option value="Device fault">Device fault</option>
+          </select>
+        </label>
+        <label className="review-wide">Review comment
+          <textarea value={reviewNote} onChange={event => { setReviewNote(event.target.value); touched(); }}
+            placeholder="Summarize the evidence and explain your decision…"
+            rows={2} maxLength={1200} required={classification !== 'Candidate'}/>
+        </label>
+      </div>
+      <label className="safety-review-action-toggle">
+        <input type="checkbox" checked={actionEnabled} onChange={event => { setActionEnabled(event.target.checked); touched(); }}/>
+        Assign or update a corrective action
+      </label>
+      {actionEnabled && <div className="safety-review-grid">
+        <label className="review-wide">Required corrective action
+          <input type="text" required maxLength={240} value={actionTitle}
+            onChange={event => { setActionTitle(event.target.value); touched(); }}/>
+        </label>
+        <label>Responsible person / role
+          <input type="text" required maxLength={120} value={actionOwner}
+            onChange={event => { setActionOwner(event.target.value); touched(); }}/>
+        </label>
+        <label>Due date
+          <input type="date" required value={actionDue}
+            onChange={event => { setActionDue(event.target.value); touched(); }}/>
+        </label>
+        <label>Action status
+          <select value={actionStatus} onChange={event => { setActionStatus(event.target.value as DemoAction['status']); touched(); }}>
+            <option value="Open">Open</option><option value="In progress">In progress</option>
+            <option value="Completed">Completed</option>
+          </select>
+        </label>
+      </div>}
+      {validation && <p className="safety-review-error" role="alert">{validation}</p>}
+      <div className="safety-review-footer">
+        <span>{saved ? 'Saved in this browser session.' : 'Sample workflow only · no Supabase write'}</span>
+        <button type="submit" className="safety-review-save"><ClipboardCheck size={15}/> Save review</button>
+      </div>
+    </form>
+  </details>;
+}
+
+function CaseDetails({ selected, onReviewCase, sessionCase }: {
+  selected: DemoCase;
+  onReviewCase?: (caseId: string, input: DemoReviewInput) => void;
   sessionCase?: boolean;
 }) {
   const vehicle = demoVehicles.find(item => item.id === selected.vehicleId);
@@ -71,14 +164,11 @@ function CaseDetails({ selected, onAddDemoAction, sessionCase }: {
         <span className={'safety-pill ' + statusClass(selected.recommendedAction.status)}>{selected.recommendedAction.status}</span>
       </div>
     </>}
-    {sessionCase && !selected.recommendedAction && <div className="safety-session-action">
-      <strong>Simulation candidate · not verified</strong>
-      <p>This event came from the browser sandbox, not an ESP32. A real safety manager would check the evidence before determining its classification.</p>
-      <button type="button" onClick={() => onAddDemoAction?.(selected.id)} disabled={!onAddDemoAction}>
-        <ClipboardCheck size={15}/> Assign example corrective action
-      </button>
-      <small>Demo only; changes stay in this browser session.</small>
+    {selected.reviewNote && <div className="safety-reviewed-note">
+      <strong>Reviewer comment</strong><p>{selected.reviewNote}</p>
+      {selected.reviewedAt && <small>Reviewed {prettyDate(selected.reviewedAt)}</small>}
     </div>}
+    <ReviewEditor key={selected.id} selected={selected} sessionCase={Boolean(sessionCase)} onReviewCase={onReviewCase}/>
     {impact && before !== null && after !== null && <div className="safety-impact">
       <h3>Intervention follow-up (sample)</h3>
       <div className="safety-rate-row"><span>Before</span><strong>{before.toFixed(1)} alerts / 100 vehicle-hours</strong></div>
@@ -88,11 +178,11 @@ function CaseDetails({ selected, onAddDemoAction, sessionCase }: {
   </aside>;
 }
 
-export default function SafetyWorkspace({ view, isDemoAccount, sessionCases = [], preferredCaseId, onAddDemoAction }: Props) {
+export default function SafetyWorkspace({ view, isDemoAccount, sessionCases = [], preferredCaseId, onReviewCase }: Props) {
   const [filter, setFilter] = useState<Filter>('All');
   const [selectedId, setSelectedId] = useState(preferredCaseId || demoCases[0].id);
   useEffect(() => { if (preferredCaseId) setSelectedId(preferredCaseId); }, [preferredCaseId]);
-  const allCases = useMemo(() => [...sessionCases, ...demoCases], [sessionCases]);
+  const allCases = useMemo(() => mergeDemoCases(sessionCases), [sessionCases]);
   const [selectedVehicleId, setSelectedVehicleId] = useState(demoVehicles[0].id);
   const [site, setSite] = useState('All sites');
   const selected = allCases.find(item => item.id === selectedId) || allCases[0];
@@ -158,7 +248,7 @@ export default function SafetyWorkspace({ view, isDemoAccount, sessionCases = []
         </div>
         <CaseDetails selected={cases.find(item => item.id === selected.id) || cases[0] || selected}
           sessionCase={sessionCases.some(item => item.id === (cases.find(item => item.id === selected.id) || cases[0] || selected).id)}
-          onAddDemoAction={onAddDemoAction}/>
+          onReviewCase={onReviewCase}/>
       </div>
     </> : <>
       <div className="safety-vehicle-layout">
