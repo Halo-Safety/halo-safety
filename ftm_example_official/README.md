@@ -5,6 +5,12 @@
 
 ## Halo vehicle anchors
 
+After testing FTM locally, to send readings to the cloud Halo dashboard, follow
+[the FTM Gateway → Supabase setup guide](../docs/ftm-cloud-uplink.md).
+The worker ESP32 stays connected over USB to the computer running `halo_nat/app.py`.
+Cloud upload is optional and uses a separate scoped gateway token.
+
+
 In the ESP-IDF terminal, run `idf.py menuconfig`. Open **Example Configuration → Halo boot role**, select the role for the board you are about to flash, and save. If the menu is missing, enable **FTM Responder support** under **Component config → Wi-Fi** first.
 
 | Role | SSID |
