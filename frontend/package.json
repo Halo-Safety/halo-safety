@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "test:geometry": "node --experimental-strip-types --test tests/ftmGeometry.test.mjs"
+    "test:geometry": "node --experimental-strip-types --test tests/ftmGeometry.test.mjs",
+    "test:review": "node --experimental-strip-types --test tests/demoReview.test.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",
