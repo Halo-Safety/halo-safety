@@ -174,7 +174,10 @@ export default function App({ onExit, userEmail }: AppProps) {
     return () => window.clearInterval(interval);
   }, [refresh]);
 
-  const ordered = useMemo(() => sortedEvents(events), [events]);
+  // One source per account: the invited walkthrough uses local fixtures, all other accounts use RLS-filtered Supabase.
+  // Fixture rows never enter the production database.
+  const displayedEvents = useMemo(() => isTestAccount ? sampleSensorEvents : events, [isTestAccount, events]);
+  const ordered = useMemo(() => sortedEvents(displayedEvents), [displayedEvents]);
   const [historyFilter, setHistoryFilter] = useState<'all' | 'alerts' | 'cleared'>('all');
   const [historySearch, setHistorySearch] = useState('');
   const matchesHistory = useCallback((item: SensorEvent) => {
@@ -184,20 +187,15 @@ export default function App({ onExit, userEmail }: AppProps) {
     const q = historySearch.trim().toLowerCase();
     return !q || [item.worker_id, item.machine_id, type, item.zone || ''].some(value => value.toLowerCase().includes(q));
   }, [historyFilter, historySearch]);
-  const filteredHistory = useMemo(() => ordered.filter(matchesHistory), [ordered, matchesHistory]);
-  const sampleHistory = useMemo(() => isTestAccount ? sortedEvents(sampleSensorEvents) : [], [isTestAccount]);
-  const filteredSampleHistory = useMemo(() => sampleHistory.filter(matchesHistory), [sampleHistory, matchesHistory]);
-  // Demo fixtures remain isolated in memory; render one chronological table without synthetic database writes.
-  const visibleHistory = useMemo(() => sortedEvents([...filteredHistory, ...filteredSampleHistory]), [filteredHistory, filteredSampleHistory]);
-  const sampleActive = useMemo(() => isTestAccount ? getActiveEvents(sampleSensorEvents) : [], [isTestAccount]);
-  const active = useMemo(() => getActiveEvents(events), [events]);
-  const chart = useMemo(() => recentChart(events), [events]);
-  const totalAlerts = events.filter((event) => eventType(event) === 'PROXIMITY_ALERT').length;
+  const visibleHistory = useMemo(() => ordered.filter(matchesHistory), [ordered, matchesHistory]);
+  const active = useMemo(() => getActiveEvents(displayedEvents), [displayedEvents]);
+  const chart = useMemo(() => recentChart(displayedEvents), [displayedEvents]);
+  const totalAlerts = displayedEvents.filter((event) => eventType(event) === 'PROXIMITY_ALERT').length;
   const today = dateKey(new Date());
-  const todayAlerts = events.filter((event) =>
+  const todayAlerts = displayedEvents.filter((event) =>
     eventType(event) === 'PROXIMITY_ALERT' && eventDate(event.timestamp) &&
     dateKey(eventDate(event.timestamp)!) === today).length;
-  const machines = new Set(events.map((event) => event.machine_id).filter(Boolean)).size;
+  const machines = new Set(displayedEvents.map((event) => event.machine_id).filter(Boolean)).size;
   const simulatedAlerts = simulationEvents.filter(event => event.event === 'PROXIMITY_ALERT').length;
   const latestSimulationAlert = simulationEvents.find(event => event.event === 'PROXIMITY_ALERT');
   const openDemoCase = (caseId: string) => {
@@ -218,7 +216,7 @@ export default function App({ onExit, userEmail }: AppProps) {
       operator: vehicle.assignedOperator,
       zone,
       shift: 'Simulation',
-      source: 'Browser scenario simulator (demo only)',
+      source: 'Browser scenario simulator',
       observations: 1,
       classification: 'Candidate',
       status: 'Needs review',
@@ -236,7 +234,7 @@ export default function App({ onExit, userEmail }: AppProps) {
   const saveDemoReview = (caseId: string, input: DemoReviewInput) => {
     if (!isTestAccount) return;
     const original = mergeDemoCases(sessionCases, demoCases).find(item => item.id === caseId);
-    if (!original) throw new Error('Could not locate the selected sample case.');
+    if (!original) throw new Error('Could not locate the selected case.');
     const updated = reviewDemoCase(original, input, new Date().toISOString());
     // Session-only override: replaces sample records without duplicate KPI counts.
     setSessionCases(previous => [updated, ...previous.filter(item => item.id !== caseId)]);
@@ -292,9 +290,9 @@ export default function App({ onExit, userEmail }: AppProps) {
           <section className="simulator-page" aria-labelledby="simulation-heading" hidden={!simulationView}>
             <div className="simulation-heading">
               <div>
-                <div className="panel-kicker">SCENARIO LAB / SANDBOX</div>
+                <div className="panel-kicker">SCENARIO LAB / SIMULATION</div>
                 <h1 id="simulation-heading" className="display-heading">Simulation</h1>
-                <p className="simulator-intro">Plan routes, explore blind zones and see how warnings appear in Halo. This is a simulation; no real incidents are recorded.</p>
+                <p className="simulator-intro">Plan routes, explore blind zones, and examine how proximity alerts are generated.</p>
               </div>
 
             </div>
@@ -307,9 +305,9 @@ export default function App({ onExit, userEmail }: AppProps) {
             {isTestAccount && latestSimulationAlert && <div className="simulation-quick-case">
               <div><AlertTriangle size={17}/>
                 <span><strong>Scenario warning captured</strong> · {latestSimulationAlert.zone || 'Vehicle proximity zone'}
-                  <small>Example observation — not a verified incident</small></span></div>
+                  </span></div>
               <button type="button" onClick={() => reviewSimulationAlert(latestSimulationAlert)}>
-                {sessionCases.some(item => item.id === 'SIM-' + latestSimulationAlert.id) ? 'Open sample case' : 'Review as sample case'}
+                {sessionCases.some(item => item.id === 'SIM-' + latestSimulationAlert.id) ? 'Open case' : 'Review case'}
                 <ArrowRight size={15}/>
               </button>
             </div>}
@@ -328,8 +326,8 @@ export default function App({ onExit, userEmail }: AppProps) {
             </div>
             <section className="panel simulation-timeline" aria-label="Simulated event timeline">
               <div className="panel-header">
-                <div><div className="panel-kicker">LOCAL SESSION / TEST EVENTS</div><h2>Simulation activity</h2></div>
-                <span className="subtle-tag">Not real incidents</span>
+                <div><div className="panel-kicker">SCENARIO / EVENT TIMELINE</div><h2>Simulation activity</h2></div>
+                
               </div>
               {simulationEvents.length === 0
                 ? <p className="simulation-empty">Move the worker into a blind zone or run a route to create a simulated alert.</p>
@@ -358,66 +356,42 @@ export default function App({ onExit, userEmail }: AppProps) {
               todaySignals: todayAlerts,
               machinesObserved: machines,
               historyCount: events.length,
-              online: apiOnline,
-              error,
+              online: isTestAccount || apiOnline,
+              error: isTestAccount ? null : error,
               chart,
             }}
           />}
           {alertsView && <>
             <div className="page-heading">
               <div><div className="panel-kicker">MONITORING / ACTION REQUIRED</div><h1 className="display-heading">Active alerts</h1>
-                <p>Uncleared worker–machine proximity warnings from live sensor events. Simulated warnings stay separate.</p></div>
-              <span className={'status-counter ' + (active.length ? 'warning' : '')}>{active.length} live</span>
+                <p>Uncleared worker–machine proximity alerts.</p></div>
+              <span className={'status-counter ' + (active.length ? 'warning' : '')}>{active.length} active</span>
             </div>
 
-            {error && <div className="error-banner" role="alert"><AlertTriangle size={18}/><span>Unable to load alerts: {error}</span></div>}
+            {!isTestAccount && error && <div className="error-banner" role="alert"><AlertTriangle size={18}/><span>Unable to load alerts: {error}</span></div>}
             <section className="panel monitoring-alerts">
-              <div className="panel-header"><div><div className="panel-kicker">LIVE WARNINGS</div><h2>Current alerts</h2></div>
-                <span className="subtle-tag">{apiOnline ? 'Cloud connected · 3 s refresh' : 'Cloud unavailable'}</span></div>
-              {active.length > 0 && <div className="active-list">
-                {active.map((item, index) => <div className="active-item" key={String(item.id ?? index)}>
+              <div className="panel-header"><div><div className="panel-kicker">EVENT MONITORING</div><h2>Current alerts</h2></div>
+                <span className="subtle-tag">{isTestAccount ? 'Updated this session' : apiOnline ? 'Cloud connected · 3 s refresh' : 'Cloud unavailable'}</span></div>
+              {active.length === 0 ? <div className="empty-alerts">
+                <div className="empty-icon"><CheckCircle2 size={28}/></div>
+                <strong>No active alerts</strong>
+              </div> : <div className="active-list">
+                {active.map((item,index) => <div className="active-item" key={String(item.id ?? index)}>
                   <div className="active-icon"><AlertTriangle size={19}/></div>
                   <div><strong>{item.worker_id} near {item.machine_id}</strong>
                     <small>Triggered {formatTime(item.timestamp)}{item.zone ? ' · ' + item.zone : ''}</small></div>
                   <EventBadge type={eventType(item)}/>
                 </div>)}
               </div>}
-              {active.length === 0 && <div className={isTestAccount ? 'sample-live-empty' : 'empty-alerts'}>
-                {!isTestAccount && <div className="empty-icon"><CheckCircle2 size={28}/></div>}
-                <span>{apiOnline ? 'No live alerts recorded.' : 'Live event feed unavailable.'}</span>
-              </div>}
-              {isTestAccount && <div className="sample-feed">
-                <div className="sample-feed-heading">
-                  <strong>Example alerts</strong><span>3 fictional examples · not live sensor data</span>
-                </div>
-                <div className="active-list">
-                  {sampleActive.map((item, index) => <div className="active-item sample-active-item" key={'sample-' + String(item.id ?? index)}>
-                    <div className="active-icon"><AlertTriangle size={19}/></div>
-                    <div><strong>{item.worker_id} near {item.machine_id}</strong>
-                      <small>{formatTime(item.timestamp)}{item.zone ? ' · ' + item.zone : ''}</small></div>
-                    <span className="sample-inline-label">Sample</span>
-                  </div>)}
-                </div>
-              </div>}
             </section>
-            {isTestAccount && <section className="panel monitoring-sandbox">
-              <div className="panel-header"><div><div className="panel-kicker">SANDBOX / SEPARATE FROM LIVE</div><h2>Simulation alerts</h2></div>
-                <span className="subtle-tag">Demo only</span></div>
-              <div className="monitoring-sandbox-content">
-                <p>{simulationActive ? 'Simulated warning active.' : 'No active simulated warning.'}</p>
-                {latestSimulationAlert && <div className="monitoring-sandbox-latest"><span>{latestSimulationAlert.zone || 'Vehicle approach zone'} · {formatTime(latestSimulationAlert.timestamp)}</span>
-                  <button type="button" onClick={() => reviewSimulationAlert(latestSimulationAlert)}>Review sample case <ArrowRight size={14}/></button></div>}
-                <a href="#simulation">Open scenario simulator <ArrowRight size={14}/></a>
-              </div>
-            </section>}
           </>}
           {historyView && <>
             <div className="page-heading">
               <div><div className="panel-kicker">MONITORING / AUDIT TRAIL</div><h1 className="display-heading">Event history</h1>
                 <p>Chronological record of proximity alerts and alert clears.</p></div>
-              <span className="subtle-tag">{isTestAccount ? events.length + sampleHistory.length : events.length} records</span>
+              <span className="subtle-tag">{displayedEvents.length} records</span>
             </div>
-            {error && <div className="error-banner" role="alert"><AlertTriangle size={18}/><span>Unable to load history: {error}</span></div>}
+            {!isTestAccount && error && <div className="error-banner" role="alert"><AlertTriangle size={18}/><span>Unable to load history: {error}</span></div>}
             <section className="panel history-panel">
               <div className="panel-header"><div><div className="panel-kicker">EVENT LOG</div><h2>Event history</h2></div>
                 <span className="subtle-tag">{visibleHistory.length} matching</span></div>
@@ -446,16 +420,6 @@ export default function App({ onExit, userEmail }: AppProps) {
                 {visibleHistory.length === 0 && <div className="empty-table">No events match the current filters.</div>}
               </div>
             </section>
-            {isTestAccount && simulationEvents.length > 0 && <section className="panel monitoring-sandbox">
-              <div className="panel-header"><div><div className="panel-kicker">SANDBOX / NOT REAL SENSOR DATA</div><h2>Simulation session history</h2></div>
-                <span className="subtle-tag">{simulationEvents.length} events</span></div>
-              <div className="simulation-event-list">
-                {simulationEvents.slice(0, 10).map(item => <div className="simulation-event-row" key={item.id}>
-                  <EventBadge type={item.event}/><span>{item.zone || 'Vehicle approach zone'}</span><time>{formatTime(item.timestamp)}</time>
-                  {item.event === 'PROXIMITY_ALERT' && <button type="button" className="simulation-case-link" onClick={() => reviewSimulationAlert(item)}>Review as sample case <ArrowRight size={14}/></button>}
-                </div>)}
-              </div>
-            </section>}
           </>}
         </div>
       </main>
