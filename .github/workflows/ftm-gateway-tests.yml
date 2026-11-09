@@ -1,0 +1,27 @@
+name: FTM gateway tests
+
+on:
+  pull_request:
+    paths:
+      - "halo_nat/**"
+      - ".github/workflows/ftm-gateway-tests.yml"
+  push:
+    branches: [main]
+    paths:
+      - "halo_nat/**"
+      - ".github/workflows/ftm-gateway-tests.yml"
+
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install gateway dependencies
+        run: python -m pip install -r halo_nat/requirements.txt
+      - name: Compile Python gateway
+        run: python -m compileall -q halo_nat/app.py halo_nat/cloud_gateway.py halo_nat/worker_locator.py
+      - name: Test cloud payload conversion
+        run: PYTHONPATH=halo_nat python -m unittest discover -s halo_nat/tests -p "test_*.py" -v
