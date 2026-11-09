@@ -9,7 +9,7 @@ import './SafetyRecords.css';
 
 type View = 'cases' | 'vehicles';
 type FormKind = 'case' | 'vehicle' | 'action' | null;
-type Filter = 'all' | 'needs_review' | 'reviewed_near_miss' | 'demo';
+type Filter = 'all' | 'needs_review' | 'reviewed_near_miss';
 
 const titleCase = (value: string) => value.replaceAll('_', ' ').replace(/\b\w/g, c => c.toUpperCase());
 const dateLabel = (value: string) => new Date(value).toLocaleString(undefined, {
@@ -110,7 +110,6 @@ export default function SafetyRecords({ view }: { view: View }) {
   const filteredCases = useMemo(() => cases.filter(item => {
     if (filter === 'needs_review') return item.status === 'needs_review' || item.status === 'investigating';
     if (filter === 'reviewed_near_miss') return item.classification === 'reviewed_near_miss';
-    if (filter === 'demo') return item.is_demo;
     return true;
   }), [cases, filter]);
   const selectedCase = filteredCases.find(item => item.id === selectedCaseId) || filteredCases[0];
@@ -231,7 +230,7 @@ export default function SafetyRecords({ view }: { view: View }) {
     {!loading && organizations.length === 0 && !error && <div className="safety-no-data">
       <ShieldCheck size={29}/>
       <h2>No organization membership found</h2>
-      <p>Ask an administrator to add your account to an organization. Halo does not create organizations or use a public demo-data bypass.</p>
+      <p>Ask an administrator to add your account to an organization. Contact the workspace administrator for access.</p>
     </div>}
 
     {organizations.length > 0 && <>
@@ -239,13 +238,13 @@ export default function SafetyRecords({ view }: { view: View }) {
         <div className="safety-record-kpis">
           {view === 'cases' ? <>
             <span><strong>{cases.length}</strong> cases</span>
-            <span><strong>{unreviewed}</strong> pending review (real)</span>
-            <span><strong>{verified}</strong> reviewed (real)</span>
+            <span><strong>{unreviewed}</strong> pending review</span>
+            <span><strong>{verified}</strong> verified reviews</span>
             <span><strong>{overdue.length}</strong> overdue actions</span>
           </> : <>
             <span><strong>{vehicles.length}</strong> vehicles</span>
             <span><strong>{vehicles.filter(v => v.device_status === 'online').length}</strong> reporting online (manual status)</span>
-            <span><strong>{vehicles.filter(v => v.is_demo).length}</strong> marked demo</span>
+            <span><strong>{cases.length}</strong> linked cases</span>
           </>}
         </div>
         {canEdit && <button className="safety-add" type="button" onClick={() => view === 'vehicles' ? startVehicle() : startCase()}>
@@ -255,7 +254,7 @@ export default function SafetyRecords({ view }: { view: View }) {
       {view === 'cases' && <div className="safety-filter-buttons safety-cloud-filters">
         {([
           ['all','All cases'], ['needs_review','Needs review'],
-          ['reviewed_near_miss','Reviewed near misses'], ['demo','Marked demo'],
+          ['reviewed_near_miss','Reviewed near misses'],
         ] as [Filter,string][]).map(([value,label]) =>
           <button type="button" key={value} onClick={() => setFilter(value)}
             className={filter === value ? 'selected' : ''}>{label}</button>)}
@@ -270,10 +269,10 @@ export default function SafetyRecords({ view }: { view: View }) {
             type="button" key={item.id} onClick={() => { setSelectedVehicleId(item.id); setFormKind(null); }}>
             <div className="safety-vehicle-title"><Truck size={18}/><strong>{item.name}</strong></div>
             <div className="safety-case-meta">{item.asset_tag} · {item.site || 'Site not set'}</div>
-            <div className="safety-vehicle-bottom"><span>{item.owner_name || 'Owner not set'}</span><span>{item.is_demo ? 'SAMPLE' : titleCase(item.device_status)}</span></div>
+            <div className="safety-vehicle-bottom"><span>{item.owner_name || 'Owner not set'}</span><span>{titleCase(item.device_status)}</span></div>
           </button>) : filteredCases.map(item => <button className={'safety-case-row' + (selectedCase?.id === item.id ? ' selected' : '')}
             type="button" key={item.id} onClick={() => { setSelectedCaseId(item.id); setFormKind(null); }}>
-            <div className="safety-case-top"><span>{dateLabel(item.occurred_at)} · {item.is_demo ? 'SAMPLE' : 'RECORD'}</span>
+            <div className="safety-case-top"><span>{dateLabel(item.occurred_at)}</span>
               <span className="safety-pill">{titleCase(item.status)}</span></div>
             <strong>{item.title}</strong>
             <div className="safety-case-meta">{vehicles.find(v => v.id === item.vehicle_id)?.name || 'No vehicle linked'} · {item.zone || 'Zone unspecified'}</div>
@@ -296,7 +295,6 @@ export default function SafetyRecords({ view }: { view: View }) {
               <Field label="Device state (manual)"><select value={vehicleInput.device_status} onChange={e=>setVehicleInput({...vehicleInput,device_status:e.target.value as VehicleInput['device_status']})}>
                 {['unknown','online','offline','unreliable'].map(k=><option key={k}>{k}</option>)}</select></Field>
               <Field label="Operating hours (entered)"><input type="number" min={0} step=".01" value={vehicleInput.operating_hours} onChange={e=>setVehicleInput({...vehicleInput,operating_hours:Number(e.target.value)})}/></Field>
-              <label className="safety-check"><input type="checkbox" checked={vehicleInput.is_demo} onChange={e=>setVehicleInput({...vehicleInput,is_demo:e.target.checked})}/> Mark as demonstration data</label>
             </div>
             <div className="safety-form-actions"><button type="button" onClick={()=>setFormKind(null)}>Cancel</button><button className="safety-add" type="submit" disabled={busy}><Save size={15}/> {busy?'Saving…':'Save vehicle'}</button></div>
           </form>}
@@ -322,7 +320,6 @@ export default function SafetyRecords({ view }: { view: View }) {
               <Field label="Assessment" wide><textarea rows={3} value={caseInput.summary} onChange={e=>setCaseInput({...caseInput,summary:e.target.value})}/></Field>
               <Field label="Evidence notes / source references" wide><textarea rows={3} value={caseInput.evidence_notes} onChange={e=>setCaseInput({...caseInput,evidence_notes:e.target.value})}/></Field>
               <Field label="Recurring risk pattern" wide><textarea rows={2} value={caseInput.pattern_notes} onChange={e=>setCaseInput({...caseInput,pattern_notes:e.target.value})}/></Field>
-              <label className="safety-check"><input type="checkbox" checked={caseInput.is_demo} onChange={e=>setCaseInput({...caseInput,is_demo:e.target.checked})}/> Fictional / demonstration record</label>
             </div>
             <div className="safety-form-actions"><button type="button" onClick={()=>setFormKind(null)}>Cancel</button><button className="safety-add" type="submit" disabled={busy}><Save size={15}/> {busy?'Saving…':'Save case'}</button></div>
           </form>}
@@ -343,7 +340,7 @@ export default function SafetyRecords({ view }: { view: View }) {
 
           {!formKind && view === 'vehicles' && (selectedVehicle
             ? <>
-              <div className="safety-detail-header"><span className="safety-eyebrow">{selectedVehicle.asset_tag} · {selectedVehicle.is_demo ? 'DEMO' : 'ORGANIZATION RECORD'}</span><h2>{selectedVehicle.name}</h2>
+              <div className="safety-detail-header"><span className="safety-eyebrow">FLEET ASSET / {selectedVehicle.asset_tag}</span><h2>{selectedVehicle.name}</h2>
                 {canEdit && <button className="safety-inline-edit" onClick={()=>startVehicle(selectedVehicle)}>Edit vehicle</button>}</div>
               <dl className="safety-facts">
                 <div><dt>Vehicle type</dt><dd>{selectedVehicle.vehicle_type}</dd></div>
@@ -362,7 +359,7 @@ export default function SafetyRecords({ view }: { view: View }) {
 
           {!formKind && view === 'cases' && (selectedCase
             ? <>
-              <div className="safety-detail-header"><span className="safety-eyebrow">{selectedCase.is_demo ? 'DEMO CASE' : 'ORGANIZATION CASE'} · {selectedCase.id.slice(0, 8)}</span><h2>{selectedCase.title}</h2>
+              <div className="safety-detail-header"><span className="safety-eyebrow">CASE / {selectedCase.id.slice(0, 8)}</span><h2>{selectedCase.title}</h2>
                 <div className="safety-chips"><span className="safety-pill">{titleCase(selectedCase.classification)}</span>
                   <span className="safety-pill">{titleCase(selectedCase.status)}</span>
                   <span className="safety-pill">{titleCase(selectedCase.potential_severity)} potential</span></div>
@@ -392,7 +389,6 @@ export default function SafetyRecords({ view }: { view: View }) {
             </> : <div className="safety-empty">Select a case to review the details.</div>)}
         </aside>
       </div>
-      <p className="safety-persistence-footnote">Data shown here are stored in Supabase for your selected organization. Records marked DEMO are fictional and must not be included in verified incident statistics. Physical sensor events are not automatically converted to cases yet.</p>
     </>}
   </section>;
 }
