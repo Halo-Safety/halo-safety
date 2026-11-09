@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { Activity, AlertTriangle, ArrowRight, BadgeCheck, Clock3, ClipboardCheck, HardHat, ShieldCheck, Truck } from 'lucide-react';
 import { demoCases, demoVehicles, mergeDemoCases, type DemoCase, type DemoAction, type CaseClassification, type DemoReviewInput } from './demoSafetyData';
 import './SafetyWorkspace.css';
@@ -40,6 +40,8 @@ function ReviewEditor({ selected, sessionCase, onReviewCase }: {
   const [actionStatus, setActionStatus] = useState<DemoAction['status']>(selected.recommendedAction?.status || 'Open');
   const [validation, setValidation] = useState('');
   const [saved, setSaved] = useState(false);
+  const detailsRef = useRef<HTMLDetailsElement>(null);
+  useEffect(() => { if (sessionCase && detailsRef.current) detailsRef.current.open = true; }, [sessionCase]);
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -65,7 +67,7 @@ function ReviewEditor({ selected, sessionCase, onReviewCase }: {
   }
 
   const touched = () => { setSaved(false); setValidation(''); };
-  return <details className="safety-review-editor" defaultOpen={sessionCase}>
+  return <details ref={detailsRef} className="safety-review-editor">
     <summary><span><ClipboardCheck size={16}/> Review & corrective action</span><small>{sessionCase ? 'Review new simulated observation' : 'Edit sample case'}</small></summary>
     <form onSubmit={submit}>
       <div className="safety-review-grid">
