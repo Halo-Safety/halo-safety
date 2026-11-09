@@ -7,6 +7,7 @@ import {
 } from './safetyApi';
 import './SafetyRecords.css';
 import { validateActionUpdate, validateCaseWorkflow } from './safetyWorkflow';
+import { getSelectedSafetyOrg, rememberSelectedSafetyOrg } from './safetyOrgPreference';
 
 type View = 'cases' | 'vehicles';
 type FormKind = 'case' | 'vehicle' | 'action' | null;
@@ -72,7 +73,10 @@ export default function SafetyRecords({ view, preferredCaseId }: { view: View; p
     void listSafetyOrganizations().then(orgs => {
       if (disposed) return;
       setOrganizations(orgs);
-      setOrgId(current => orgs.some(org => org.id === current) ? current : orgs[0]?.id || '');
+      setOrgId(current => {
+         const preferred = getSelectedSafetyOrg();
+         return orgs.some(org => org.id === current) ? current : orgs.find(org => org.id === preferred)?.id || orgs[0]?.id || '';
+       });
       setLoading(false);
     }).catch(issue => {
       if (disposed) return;
@@ -226,6 +230,7 @@ export default function SafetyRecords({ view, preferredCaseId }: { view: View; p
         <select value={orgId} onChange={event => {
           loadGeneration.current += 1;
           setOrgId(event.target.value);
+          rememberSelectedSafetyOrg(event.target.value);
           setFormKind(null); setSelectedCaseId(null); setSelectedVehicleId(null);
           setCases([]); setVehicles([]); setActions([]); setNotice(null);
         }}>{organizations.map(item => <option value={item.id} key={item.id}>{item.name}</option>)}</select>
