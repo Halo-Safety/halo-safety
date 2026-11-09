@@ -208,6 +208,7 @@ export default function FtmAnchorMap({ vehicles, samples, now, enableDemoReplay 
       {selected && (enableDemoReplay || vehicleSamples.length > 1) && <label>Worker / gateway
         <select value={replayMode ? DEMO_REPLAY_GATEWAY : latest?.gateway_id || ''} onChange={event => {
           setGatewayId(event.target.value);
+          if (event.target.value === DEMO_REPLAY_GATEWAY) setShowTrail(true);
           setReplayIndex(0);
           setReplayCycle(cycle => cycle + 1);
         }}>
@@ -220,7 +221,7 @@ export default function FtmAnchorMap({ vehicles, samples, now, enableDemoReplay 
         <span>Replay {replayIndex + 1}/{demoReplayWaypoints.length}{replayIndex === demoReplayWaypoints.length - 1 ? ' · finished' : ' · 11 s updates'}</span>
         <button type="button" onClick={() => { setReplayIndex(0); setReplayCycle(cycle => cycle + 1); }}>Restart</button>
       </div>}
-      <label className="ftm-map-trail"><input type="checkbox" checked={showTrail} onChange={event => setShowTrail(event.target.checked)}/> Show recent estimates</label>
+      <label className="ftm-map-trail"><input type="checkbox" checked={showTrail} onChange={event => setShowTrail(event.target.checked)}/> {replayMode ? 'Show replay trail' : 'Show recent estimates'}</label>
     </div>
     {error && <div className="hardware-error" role="alert">{error}</div>}
     {saved && <div className="ftm-map-saved" role="status">{saved}</div>}
