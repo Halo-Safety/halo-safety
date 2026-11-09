@@ -9,8 +9,3 @@
 .ftm-map-heading{margin-bottom:12px}
 .ftm-map-controls{margin-bottom:12px}
 .ftm-anchor-editor{padding:14px}
-
-/* Temporary local-only walk replay controls, deliberately small for recording. */
-.ftm-replay-control{display:flex;align-items:center;gap:9px;color:#66899a;font-size:10px}
-.ftm-replay-control button{border:1px solid #cde1ea;border-radius:8px;background:#f1f8fb;color:#377b98;font:inherit;font-size:10px;font-weight:650;padding:7px 10px;cursor:pointer}
-.ftm-replay-control button:hover{background:#e5f2f8}
