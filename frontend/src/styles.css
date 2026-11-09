@@ -249,3 +249,6 @@ tr:hover td{background:#f8fbfc}
   .breadcrumb span:first-child,.breadcrumb-separator{display:none}
   .metric-label svg{display:none}.nav-count{display:none}
 }
+
+/* Clear separation between fictional business walkthrough and production event data. */
+.overview-mode-switch{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:-7px 0 21px}.overview-mode-switch button{border:1px solid #d5e6ec;border-radius:9px;padding:9px 12px;font-size:11px;font-weight:650;background:#fff;color:#688699;cursor:pointer}.overview-mode-switch button.active{background:#dff0f5;color:#2a7694;border-color:#b5dce6}.overview-mode-switch>span{font-size:10px;color:#92a9b6;margin-left:4px}.simulation-case-link{display:inline-flex;align-items:center;gap:5px;color:#397e97;background:#eaf5f9;border:1px solid #d2e7ee;border-radius:8px;padding:8px 10px;font-size:10px;font-weight:650;white-space:nowrap;cursor:pointer}.simulation-case-link:hover{background:#d9edf4}@media(max-width:720px){.simulation-case-link{flex:1;justify-content:center}}
