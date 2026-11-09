@@ -8,7 +8,7 @@ import { eventType, type SensorEvent } from './types';
 import SafetyModule from './SafetyModule';
 import TelemetryPage from './TelemetryPage';
 import DemoBusinessOverview from './DemoBusinessOverview';
-import { demoVehicles, type DemoCase } from './demoSafetyData';
+import { demoVehicles, demoCases, reviewDemoCase, mergeDemoCases, type DemoCase, type DemoReviewInput } from './demoSafetyData';
 
 const POLL_INTERVAL_MS = 3000;
 
@@ -106,7 +106,7 @@ export default function App({ onExit, userEmail }: AppProps) {
   const telemetryView = view === 'telemetry' || view === 'hardware';
   const overviewView = !simulationView && !caseView && !vehicleView && !telemetryView && !alertsView && !historyView;
   const isTestAccount = userEmail.trim().toLowerCase() === 'test@ualberta.ca';
-  const [overviewMode, setOverviewMode] = useState<'business' | 'live'>(isTestAccount ? 'business' : 'live');
+
   // Video walkthrough cases never touch Supabase; refresh resets this sandbox.
   const [sessionCases, setSessionCases] = useState<DemoCase[]>([]);
   const [preferredDemoCaseId, setPreferredDemoCaseId] = useState<string | undefined>();
@@ -185,7 +185,6 @@ export default function App({ onExit, userEmail }: AppProps) {
   }), [ordered, historyFilter, historySearch]);
   const active = useMemo(() => getActiveEvents(events), [events]);
   const chart = useMemo(() => recentChart(events), [events]);
-  const maxCount = Math.max(1, ...chart.map((day) => day.count));
   const totalAlerts = events.filter((event) => eventType(event) === 'PROXIMITY_ALERT').length;
   const today = dateKey(new Date());
   const todayAlerts = events.filter((event) =>
@@ -229,19 +228,13 @@ export default function App({ onExit, userEmail }: AppProps) {
     setSessionCases(previous => previous.some(item => item.id === id) ? previous : [candidate, ...previous]);
     openDemoCase(id);
   };
-  const assignDemoAction = (caseId: string) => {
-    const due = new Date();
-    due.setDate(due.getDate() + 7);
-    setSessionCases(previous => previous.map(item => item.id === caseId ? {
-      ...item,
-      status: 'Action assigned',
-      recommendedAction: {
-        title: 'Review blind-zone layout and pedestrian routing',
-        owner: 'Site safety manager (demo)',
-        due: due.toISOString().slice(0, 10),
-        status: 'Open',
-      },
-    } : item));
+  const saveDemoReview = (caseId: string, input: DemoReviewInput) => {
+    if (!isTestAccount) return;
+    const original = mergeDemoCases(sessionCases, demoCases).find(item => item.id === caseId);
+    if (!original) throw new Error('Could not locate the selected sample case.');
+    const updated = reviewDemoCase(original, input, new Date().toISOString());
+    // Session-only override: replaces sample records without duplicate KPI counts.
+    setSessionCases(previous => [updated, ...previous.filter(item => item.id !== caseId)]);
   };
 
 
@@ -289,7 +282,7 @@ export default function App({ onExit, userEmail }: AppProps) {
         </header>
 
         <div className="page-content">
-          {(caseView || vehicleView) && <SafetyModule view={vehicleView ? 'vehicles' : 'cases'} isDemoAccount={isTestAccount} sessionCases={sessionCases} preferredCaseId={preferredDemoCaseId} onAddDemoAction={assignDemoAction}/>}
+          {(caseView || vehicleView) && <SafetyModule view={vehicleView ? 'vehicles' : 'cases'} isDemoAccount={isTestAccount} sessionCases={sessionCases} preferredCaseId={preferredDemoCaseId} onReviewCase={saveDemoReview}/>}
           {telemetryView && <TelemetryPage/>}
           <section className="simulator-page" aria-labelledby="simulation-heading" hidden={!simulationView}>
             <div className="simulation-heading">
@@ -350,96 +343,28 @@ export default function App({ onExit, userEmail }: AppProps) {
                   </div>}
             </section>
           </section>
-          {overviewView && <>
-            {isTestAccount && <div className="overview-mode-switch" role="group" aria-label="Overview data mode">
-              <button type="button" className={overviewMode === 'business' ? 'active' : ''} onClick={() => setOverviewMode('business')}>Business demo</button>
-              <button type="button" className={overviewMode === 'live' ? 'active' : ''} onClick={() => setOverviewMode('live')}>Live sensor overview</button>
-              <span>Fictional demo figures never count as live events.</span>
-            </div>}
-            {isTestAccount && overviewMode === 'business'
-              ? <DemoBusinessOverview sessionCases={sessionCases} onOpenCase={openDemoCase}/>
-              : <>
-                <div className="page-heading">
-                  <div><div className="panel-kicker">MONITORING / SUMMARY</div><h1 className="display-heading">Overview</h1>
-                    <p>Snapshot of recorded proximity signals. Open Active alerts or Event history for details.</p></div>
-                </div>
-                {error && <div className="error-banner" role="alert"><AlertTriangle size={18}/><span>Unable to load events: {error}</span></div>}
-          <section className="metrics" aria-label="Event statistics">
-            <div className="metric-card">
-              <div className="metric-label">Recorded signals <Activity size={18}/></div>
-              <div className="metric-value">{totalAlerts}</div>
-              <div className="metric-desc">Recorded sensor triggers</div>
-            </div>
-            <div className="metric-card">
-              <div className="metric-label">Active warnings <AlertTriangle size={18}/></div>
-              <div className="metric-value danger-text">{active.length}</div>
-              <div className="metric-desc">Uncleared worker–machine pairs</div>
-            </div>
-            <div className="metric-card">
-              <div className="metric-label">Signals today <Clock3 size={18}/></div>
-              <div className="metric-value">{todayAlerts}</div>
-              <div className="metric-desc">Based on local calendar day</div>
-            </div>
-            <div className="metric-card">
-              <div className="metric-label">Machines observed <HardHat size={18}/></div>
-              <div className="metric-value">{machines}</div>
-              <div className="metric-desc">Unique reported machine IDs</div>
-            </div>
-          </section>
-                <div className="overview-trend-grid">
-            <section className="panel trend-panel">
-              <div className="panel-header">
-                <div><div className="panel-kicker">TRENDS / 7 DAYS</div><h2>Signal activity</h2></div>
-                <span className="subtle-tag">Last 7 days</span>
-              </div>
-              <div className="chart-wrap">
-                <div className="chart-body">
-                  {chart.map((day) => (
-                    <div className="chart-column" key={day.key}>
-                      <span className="chart-number">{day.count || ''}</span>
-                      <div className="chart-bar-track">
-                        <div className="chart-bar" style={{ height: (day.count / maxCount * 100) + '%' }} />
-                      </div>
-                      <span className="chart-label">{day.label}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="panel-foot"><span>Counts are raw sensor alerts, not verified incidents.</span></div>
-            </section>
-                  <section className="panel overview-quick-links">
-                    <div className="panel-header"><div><div className="panel-kicker">MONITORING</div><h2>Explore activity</h2></div></div>
-                    <a href="#alerts"><AlertTriangle size={18}/><span><strong>Active alerts</strong><small>{active.length} uncleared worker–machine pairs</small></span><ArrowRight size={15}/></a>
-                    <a href="#history"><Database size={18}/><span><strong>Event history</strong><small>{events.length} recorded sensor events</small></span><ArrowRight size={15}/></a>
-                    <a href="#cases"><ClipboardCheck size={18}/><span><strong>Safety cases</strong><small>Review candidate incidents and corrective actions</small></span><ArrowRight size={15}/></a>
-                  </section>
-                </div>
-          <section className="panel sandbox-overview" aria-label="Simulation activity">
-            <div className="panel-header">
-              <div><div className="panel-kicker">SANDBOX / LOCAL SESSION</div><h2>Simulation activity</h2></div>
-              <span className="subtle-tag">Simulated · separate from live data</span>
-            </div>
-            <div className="sandbox-overview-body">
-              <div className="sandbox-stat"><strong>{simulatedAlerts}</strong><span>Simulated alerts</span></div>
-              <div className="sandbox-stat"><strong className={simulationActive ? 'danger-text' : ''}>{simulationActive ? 'Warning' : 'Clear'}</strong><span>Current simulation state</span></div>
-              <div className="sandbox-overview-latest">
-                {simulationEvents.length > 0
-                  ? <><EventBadge type={simulationEvents[0].event} /><span>{simulationEvents[0].zone || 'Vehicle safety zone'} · {formatTime(simulationEvents[0].timestamp)}</span></>
-                  : <span>No simulation events yet. Try a worker approach scenario.</span>}
-              </div>
-              <a className="sandbox-open" href="#simulation">Open scenario lab →</a>
-            </div>
-          </section>
-                <footer className="footer"><span><ShieldCheck size={15}/> Halo</span><span>{lastUpdate ? 'Last synced ' + lastUpdate.toLocaleTimeString() : 'Waiting for first sync'}</span></footer>
-              </>}
-          </>}
+          {overviewView && <DemoBusinessOverview
+            isDemoAccount={isTestAccount}
+            sessionCases={sessionCases}
+            onOpenCase={openDemoCase}
+            live={{
+              totalSignals: totalAlerts,
+              activeWarnings: active.length,
+              todaySignals: todayAlerts,
+              machinesObserved: machines,
+              historyCount: events.length,
+              online: apiOnline,
+              error,
+              chart,
+            }}
+          />}
           {alertsView && <>
             <div className="page-heading">
               <div><div className="panel-kicker">MONITORING / ACTION REQUIRED</div><h1 className="display-heading">Active alerts</h1>
-                <p>Uncleared worker–machine proximity warnings from the live sensor event stream.</p></div>
+                <p>Uncleared worker–machine proximity warnings from live sensor events. Simulated warnings stay separate.</p></div>
               <span className={'status-counter ' + (active.length ? 'warning' : '')}>{active.length} active</span>
             </div>
-            <div className="monitoring-note"><ShieldCheck size={16}/> Only real `sensor_events` appear as active alerts. Simulation examples are isolated and cannot be mistaken for live warnings.</div>
+
             {error && <div className="error-banner" role="alert"><AlertTriangle size={18}/><span>Unable to load alerts: {error}</span></div>}
             <section className="panel monitoring-alerts">
               <div className="panel-header"><div><div className="panel-kicker">LIVE WARNINGS</div><h2>Current alerts</h2></div>
