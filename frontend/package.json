@@ -11,7 +11,8 @@
     "test:review": "node --experimental-strip-types --test tests/demoReview.test.mjs",
     "test:samples": "node --experimental-strip-types --test tests/sampleSensorEvents.test.mjs",
     "test:simulator-layout": "node --test tests/simulatorLayout.test.mjs",
-    "test:workflow": "node --experimental-strip-types --test tests/safetyWorkflow.test.mjs"
+    "test:workflow": "node --experimental-strip-types --test tests/safetyWorkflow.test.mjs",
+    "test:ui-audit": "node --test tests/uiAudit.test.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",
