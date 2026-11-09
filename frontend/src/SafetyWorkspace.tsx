@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { Activity, AlertTriangle, ArrowRight, BadgeCheck, Clock3, ClipboardCheck, HardHat, ShieldCheck, Truck } from 'lucide-react';
-import { demoCases, demoVehicles, mergeDemoCases, type DemoCase, type DemoAction, type CaseClassification, type DemoReviewInput } from './demoSafetyData';
+import { demoCases, demoVehicles, mergeDemoCases, allowedDemoStatuses, type DemoCase, type DemoAction, type CaseClassification, type CaseStatus, type DemoReviewInput } from './demoSafetyData';
 import './SafetyWorkspace.css';
 
 type Props = {
@@ -29,6 +29,7 @@ function ReviewEditor({ selected, sessionCase, onReviewCase }: {
   onReviewCase?: (caseId: string, input: DemoReviewInput) => void;
 }) {
   const [classification, setClassification] = useState<CaseClassification>(selected.classification);
+  const [caseStatus, setCaseStatus] = useState<CaseStatus>(selected.status);
   const [reviewNote, setReviewNote] = useState(selected.reviewNote || '');
   const [actionEnabled, setActionEnabled] = useState(Boolean(selected.recommendedAction));
   const [actionTitle, setActionTitle] = useState(selected.recommendedAction?.title || 'Review blind-zone layout and pedestrian routing');
@@ -46,7 +47,7 @@ function ReviewEditor({ selected, sessionCase, onReviewCase }: {
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!onReviewCase) return;
-    if (classification !== 'Candidate' && !reviewNote.trim()) {
+    if ((classification !== 'Candidate' || caseStatus !== 'Needs review') && !reviewNote.trim()) {
       setValidation('Write a short review note before choosing a final classification.');
       return;
     }
@@ -54,11 +55,11 @@ function ReviewEditor({ selected, sessionCase, onReviewCase }: {
       setValidation('Please fill in the action, responsible person and due date.');
       return;
     }
-    const recommendedAction: DemoAction | null = actionEnabled
+    const recommendedAction: DemoAction | null = classification !== 'False alarm' && actionEnabled
       ? { title: actionTitle.trim(), owner: actionOwner.trim(), due: actionDue, status: actionStatus }
       : null;
     try {
-      onReviewCase(selected.id, { classification, reviewNote, recommendedAction });
+      onReviewCase(selected.id, { classification, status: caseStatus, reviewNote, recommendedAction });
       setValidation('');
       setSaved(true);
     } catch (error) {
@@ -72,24 +73,53 @@ function ReviewEditor({ selected, sessionCase, onReviewCase }: {
     <form onSubmit={submit}>
       <div className="safety-review-grid">
         <label>Classification
-          <select value={classification} onChange={event => { setClassification(event.target.value as CaseClassification); touched(); }}>
-            <option value="Candidate">Candidate — needs review</option>
+          <select value={classification} onChange={event => {
+            const next = event.target.value as CaseClassification;
+            setClassification(next);
+            if (next === 'False alarm') {
+              setCaseStatus('Dismissed');
+              setActionEnabled(false);
+            } else if (next === 'Candidate') {
+              setCaseStatus(caseStatus === 'Investigating' ? 'Investigating' : 'Needs review');
+            } else if (caseStatus === 'Dismissed' || (classification === 'Candidate' && caseStatus === 'Needs review')) {
+              setCaseStatus('Investigating');
+            }
+            touched();
+          }}>
+            <option value="Candidate">Candidate — unconfirmed</option>
             <option value="Reviewed near miss">Reviewed near miss</option>
             <option value="False alarm">False alarm</option>
             <option value="Device fault">Device fault</option>
           </select>
         </label>
+        <label>Case status
+          <select value={caseStatus} onChange={event => {
+            const next = event.target.value as CaseStatus;
+            setCaseStatus(next);
+            if (next === 'Action assigned' || next === 'Monitoring' || next === 'Closed') setActionEnabled(true);
+            touched();
+          }}>
+            {allowedDemoStatuses(classification).map(status =>
+              <option key={status} value={status}>{status}</option>)}
+          </select>
+        </label>
         <label className="review-wide">Review comment
           <textarea value={reviewNote} onChange={event => { setReviewNote(event.target.value); touched(); }}
             placeholder="Summarize the evidence and explain your decision…"
-            rows={2} maxLength={1200} required={classification !== 'Candidate'}/>
+            rows={2} maxLength={1200} required={classification !== 'Candidate' || caseStatus !== 'Needs review'}/>
         </label>
       </div>
-      <label className="safety-review-action-toggle">
-        <input type="checkbox" checked={actionEnabled} onChange={event => { setActionEnabled(event.target.checked); touched(); }}/>
+      {classification !== 'False alarm' && <label className="safety-review-action-toggle">
+        <input type="checkbox" checked={actionEnabled} onChange={event => {
+          setActionEnabled(event.target.checked);
+          if (!event.target.checked && ['Action assigned', 'Monitoring', 'Closed'].includes(caseStatus)) {
+            setCaseStatus('Investigating');
+          }
+          touched();
+        }}/>
         Assign or update a corrective action
-      </label>
-      {actionEnabled && <div className="safety-review-grid">
+      </label>}
+      {classification !== 'False alarm' && actionEnabled && <div className="safety-review-grid">
         <label className="review-wide">Required corrective action
           <input type="text" required maxLength={240} value={actionTitle}
             onChange={event => { setActionTitle(event.target.value); touched(); }}/>
@@ -109,6 +139,8 @@ function ReviewEditor({ selected, sessionCase, onReviewCase }: {
           </select>
         </label>
       </div>}
+      {(caseStatus === 'Monitoring' || caseStatus === 'Closed') && actionStatus !== 'Completed' &&
+        <p className="safety-review-hint">To {caseStatus.toLowerCase()} this case, set the corrective action status to Completed.</p>}
       {validation && <p className="safety-review-error" role="alert">{validation}</p>}
       <div className="safety-review-footer">
         <span>{saved ? 'Saved in this browser session.' : 'Sample workflow only · no Supabase write'}</span>
