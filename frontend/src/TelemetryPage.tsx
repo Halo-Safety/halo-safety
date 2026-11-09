@@ -90,8 +90,8 @@ export default function TelemetryPage() {
   return <section className="hardware-page">
     <div className="hardware-header">
       <div>
-        <div className="hardware-kicker">HARDWARE / EXPERIMENTAL TELEMETRY</div>
-        <h1 className="display-heading">Hardware</h1>
+        <div className="hardware-kicker">SENSOR INTEGRATIONS / WI-FI FTM</div>
+        <h1 className="display-heading">Telemetry</h1>
         <p>Live Wi-Fi FTM range estimates uploaded by local ESP32 gateways.</p>
       </div>
       <button type="button" className="hardware-refresh" onClick={() => {
@@ -108,7 +108,7 @@ export default function TelemetryPage() {
       <div><span>Recent gateway sources</span><strong>{latest.length}</strong><small>Latest 150 records queried</small></div>
       <div><span>Measurements loaded</span><strong>{samples.length}</strong><small>Live FTM sample history</small></div>
     </div>
-    <FtmAnchorMap vehicles={vehicles} samples={samples} now={now}/>
+    
     <div className="hardware-section-title"><h2>Gateway measurements</h2><span>{lastSync ? 'Last checked ' + lastSync.toLocaleTimeString() : 'Connecting…'}</span></div>
     {latest.length === 0 && <div className="hardware-empty"><WifiOff size={28}/>
       <strong>{loading ? 'Checking for telemetry…' : 'No FTM readings yet'}</strong>
@@ -136,6 +136,10 @@ export default function TelemetryPage() {
         </article>;
       })}
     </div>
+    <details className="hardware-positioning">
+      <summary><span><strong>Experimental 2D positioning</strong><small>Optional: anchor geometry and worker estimates (not safety-certified)</small></span></summary>
+      <FtmAnchorMap vehicles={vehicles} samples={samples} now={now}/>
+    </details>
     <section className="hardware-history">
       <div className="hardware-section-title"><h2>Recent ranging samples</h2><span>Last {Math.min(25, samples.length)} of {samples.length} loaded</span></div>
       <div className="hardware-table-wrap"><table><thead><tr><th>Time received</th><th>Vehicle</th><th>Worker</th><th>Front</th><th>Rear left</th><th>Rear right</th><th>Quality</th><th>Source</th></tr></thead><tbody>
