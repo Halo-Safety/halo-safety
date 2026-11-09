@@ -112,14 +112,13 @@ export default function DemoBusinessOverview({ isDemoAccount, sessionCases, onOp
         <div className="panel-kicker">HALO / SAFETY OPERATIONS</div>
         <h1 className="display-heading">Safety operations at a glance</h1>
         <p>Review observations, manage corrective actions and monitor incoming sensor activity.
-          {isDemoAccount ? ' Business records are fictional examples; sensor signals are live data.' :
-            ' Business records and sensor signals come from Supabase.'}</p>
+</p>
         {orgError && <p className="business-inline-error">Organization summary unavailable: {orgError}</p>}
       </div>
     </div>
     <div className="business-overview-kpis">
       <div className="business-kpi"><span><AlertTriangle size={15}/> Cases awaiting review</span>
-        <strong>{numberOrWaiting(needingReview.length)}</strong><small>{isDemoAccount ? 'Sample investigations' : 'Organization cases'}</small></div>
+        <strong>{numberOrWaiting(needingReview.length)}</strong><small>Open investigations</small></div>
       <div className="business-kpi"><span><UserRoundCheck size={15}/> Reviewed near misses</span>
         <strong>{numberOrWaiting(cases.filter(reviewed).length)}</strong><small>Human-reviewed classifications</small></div>
       <div className="business-kpi"><span><ClipboardCheck size={15}/> Outstanding actions</span>
@@ -130,7 +129,7 @@ export default function DemoBusinessOverview({ isDemoAccount, sessionCases, onOp
     <div className="business-overview-columns">
       <section className="business-panel" aria-label="Priority safety case queue">
         <div className="business-panel-head">
-          <div><span className="panel-kicker">{isDemoAccount ? 'SAMPLE CASES' : 'ORGANIZATION CASES'}</span><h2>Cases needing review</h2></div>
+          <div><span className="panel-kicker">PRIORITY QUEUE</span><h2>Cases needing review</h2></div>
           <a href="#cases">View all <ArrowRight size={14}/></a>
         </div>
         <div className="business-case-queue">
@@ -150,7 +149,7 @@ export default function DemoBusinessOverview({ isDemoAccount, sessionCases, onOp
       </section>
       <section className="business-panel" aria-label="Corrective action tracker">
         <div className="business-panel-head">
-          <div><span className="panel-kicker">{isDemoAccount ? 'SAMPLE ACTIONS' : 'ORGANIZATION ACTIONS'}</span><h2>Corrective actions</h2></div>
+          <div><span className="panel-kicker">ACTION TRACKER</span><h2>Corrective actions</h2></div>
           <a href="#cases">Review <ArrowRight size={14}/></a>
         </div>
         <div className="business-action-list">
@@ -168,7 +167,7 @@ export default function DemoBusinessOverview({ isDemoAccount, sessionCases, onOp
     </div>
     <section className="business-panel business-fleet" aria-label="Equipment activity">
       <div className="business-panel-head">
-        <div><span className="panel-kicker">{isDemoAccount ? 'SAMPLE FLEET' : 'ORGANIZATION FLEET'}</span><h2>Equipment requiring attention</h2></div>
+        <div><span className="panel-kicker">EQUIPMENT OVERVIEW</span><h2>Equipment requiring attention</h2></div>
         <a href="#vehicles">Explore fleet <ArrowRight size={14}/></a>
       </div>
       <div className="business-fleet-list">
@@ -182,11 +181,11 @@ export default function DemoBusinessOverview({ isDemoAccount, sessionCases, onOp
     </section>
     <section className="business-panel business-live" aria-label="Live sensor activity">
       <div className="business-panel-head">
-        <div><span className="panel-kicker">SUPABASE / LIVE SENSOR EVENTS</span><h2>Sensor activity</h2></div>
+        <div><span className="panel-kicker">EVENT MONITORING</span><h2>Sensor activity</h2></div>
         <span className={'business-source-status ' + (live.online ? 'online' : '')}>
           <RadioTower size={13}/>{live.online ? 'Connected' : 'Unavailable'}</span>
       </div>
-      <p className="business-live-description">Recorded proximity triggers only; FTM ranges are shown separately in Telemetry.
+      <p className="business-live-description">Proximity alert activity and resolution history. FTM ranges are shown separately in Telemetry.
         {live.error ? ' Event service unavailable: ' + live.error : ''}</p>
       <div className="business-live-layout">
         <div className="business-live-stats">
@@ -209,7 +208,7 @@ export default function DemoBusinessOverview({ isDemoAccount, sessionCases, onOp
     </section>
     <div className="business-next">
       <div><strong>Explore how an observation becomes a reviewed case.</strong>
-        <span>Generate a simulated alert and assign a sample corrective action.</span></div>
+        <span>Generate an alert, review the observation, and assign corrective work.</span></div>
       <a href="#simulation">Open scenario simulator <ArrowRight size={16}/></a>
     </div>
   </section>;
