@@ -6,6 +6,7 @@ import {
   type SafetyOrg, type Vehicle, type VehicleInput,
 } from './safetyApi';
 import './SafetyRecords.css';
+import { validateActionUpdate, validateCaseWorkflow } from './safetyWorkflow';
 
 type View = 'cases' | 'vehicles';
 type FormKind = 'case' | 'vehicle' | 'action' | null;
@@ -174,6 +175,10 @@ export default function SafetyRecords({ view, preferredCaseId }: { view: View; p
   async function submitCase(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!canEdit || !orgId) return;
+    const existingActionStatuses = actions.filter(item => item.case_id === editId).map(item => item.status);
+    const problem = validateCaseWorkflow(caseInput.classification, caseInput.status, existingActionStatuses);
+    if (problem) { setError(problem); return; }
+    setError(null);
     setBusy(true);
     try {
       const saved = await saveCase(orgId, {
@@ -192,6 +197,9 @@ export default function SafetyRecords({ view, preferredCaseId }: { view: View; p
   async function submitAction(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!canEdit || !orgId || !selectedCase) return;
+    const problem = validateActionUpdate(selectedCase.classification, selectedCase.status, actionInput.status);
+    if (problem) { setError(problem); return; }
+    setError(null);
     setBusy(true);
     try {
       await saveAction(orgId, selectedCase.id, actionInput, editId || undefined);
