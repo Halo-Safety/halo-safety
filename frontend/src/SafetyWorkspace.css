@@ -73,3 +73,5 @@
 .safety-no-data p{font-size:12px;line-height:1.7;max-width:430px;margin:0}
 @media(max-width:1150px){.safety-case-layout,.safety-vehicle-layout{grid-template-columns:1fr}.safety-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:650px){.safety-detail{padding:16px}.safety-kpis{gap:8px}.safety-kpis>div{padding:13px}.safety-kpis strong{font-size:24px}.safety-facts>div{grid-template-columns:95px minmax(0,1fr)}.safety-vehicle-bottom{flex-wrap:wrap}}
+
+.safety-session-action{margin-top:18px;background:#f2f8fb;border:1px solid #d9e9f0;border-radius:11px;padding:14px 16px;display:flex;flex-direction:column;gap:9px}.safety-session-action>strong{color:#39738c;font-size:12px}.safety-session-action>p{font-size:11px;color:#7794a3;line-height:1.6;margin:0}.safety-session-action button{align-self:flex-start;display:inline-flex;align-items:center;gap:8px;background:#3884a1;color:#fff;border:0;border-radius:8px;font-weight:650;font-size:11px;padding:10px 12px;cursor:pointer}.safety-session-action button:disabled{opacity:.5}.safety-session-action small{color:#9baeb7;font-size:10px}
