@@ -19,6 +19,12 @@ def publish(status, ranges=None, measured_at=None):
         _snapshot.update(status=status, ranges=ranges, time=measured_at)
 
 
+def get_uplink_snapshot():
+    """Return an atomic view of the latest ranging result for the cloud thread."""
+    with _lock:
+        return _snapshot.copy()
+
+
 def read_prompt(port, timeout):
     deadline = time.monotonic() + timeout
     output = bytearray()
