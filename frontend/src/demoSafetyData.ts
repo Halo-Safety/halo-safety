@@ -127,30 +127,51 @@ export const demoCases: DemoCase[] = [
 /** Changes to fixed sample cases are stored as session overrides; no Supabase writes. */
 export type DemoReviewInput = {
   classification: CaseClassification;
+  status: CaseStatus;
   reviewNote: string;
   recommendedAction: DemoAction | null;
 };
 
+/** Statuses are separate from the outcome (classification). */
+export function allowedDemoStatuses(classification: CaseClassification): CaseStatus[] {
+  if (classification === 'False alarm') return ['Dismissed'];
+  if (classification === 'Candidate') return ['Needs review', 'Investigating'];
+  return ['Needs review', 'Investigating', 'Action assigned', 'Monitoring', 'Closed'];
+}
+
+/** A consistent, small workflow for the browser-only review form. */
 export function reviewDemoCase(original: DemoCase, input: DemoReviewInput, timestamp: string): DemoCase {
-  const note = input.reviewNote.trim();
-  if (input.classification !== 'Candidate' && !note) {
-    throw new Error('Add a review note before classifying this observation.');
+  if (!allowedDemoStatuses(input.classification).includes(input.status)) {
+    throw new Error('This case status is not available for the selected classification.');
   }
+  const note = input.reviewNote.trim();
+  if ((input.classification !== 'Candidate' || input.status !== 'Needs review') && !note) {
+    throw new Error('Add a review note before progressing the case.');
+  }
+
   const action = input.recommendedAction;
+  if (input.classification === 'False alarm' && action) {
+    throw new Error('Dismissed false alarms cannot have an active corrective action.');
+  }
   if (action && (!action.title.trim() || !action.owner.trim() ||
     !/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(action.due) ||
     Number.isNaN(new Date(action.due + 'T12:00:00').getTime()))) {
     throw new Error('Complete the action description, owner and valid due date.');
   }
-  const status: CaseStatus = input.classification === 'False alarm' ? 'Dismissed'
-    : input.classification === 'Candidate' ? 'Needs review'
-    : action ? 'Action assigned' : 'Investigating';
+  if (['Action assigned', 'Monitoring', 'Closed'].includes(input.status) && !action) {
+    throw new Error('Assign a corrective action before moving this case forward.');
+  }
+  if (['Monitoring', 'Closed'].includes(input.status) && action?.status !== 'Completed') {
+    throw new Error('Mark the corrective action as Completed before monitoring or closing the case.');
+  }
+
+  const hasReview = input.classification !== 'Candidate' || input.status !== 'Needs review';
   return {
     ...original,
     classification: input.classification,
-    status,
+    status: input.status,
     reviewNote: note,
-    reviewedAt: input.classification === 'Candidate' ? undefined : timestamp,
+    reviewedAt: hasReview ? timestamp : undefined,
     recommendedAction: action ? {
       ...action, title: action.title.trim(), owner: action.owner.trim(),
     } : null,
