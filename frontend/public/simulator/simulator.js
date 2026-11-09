@@ -612,8 +612,6 @@ map.onpointerdown = event => {
     get('meter-grid').setAttribute('height', spacing);
     get('grid-line').setAttribute('d', 'M ' + spacing + ' 0 H 0 V ' + spacing);
     get('grid').removeAttribute('display');
-    get('ratio').textContent = (width / pixelsPerMetre).toFixed(2) + ' × '
-      + (height / pixelsPerMetre).toFixed(2) + ' m diagram · ' + gridMetres + ' m grid squares';
     for (const [key, value] of Object.entries({ x1: scaleStart.x, y1: scaleStart.y, x2: point.x, y2: point.y })) {
       get('ruler').setAttribute(key, value);
     }
@@ -669,7 +667,6 @@ get('upload').onchange = event => {
       get('sample').hidden = true;
       get('sample').setAttribute('display', 'none');
       for (const key of ['x1', 'y1', 'x2', 'y2']) get('ruler').removeAttribute(key);
-      get('ratio').textContent = 'Scale not set';
       pixelsPerMetre = undefined;
       get('grid').setAttribute('display', 'none');
       zones = [];
