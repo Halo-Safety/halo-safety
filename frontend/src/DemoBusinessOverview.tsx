@@ -100,10 +100,7 @@ export default function DemoBusinessOverview({ isDemoAccount, sessionCases, onOp
   const outstanding = actions.filter(pendingAction);
   const isWaiting = !isDemoAccount && orgLoading && !organization;
   const numberOrWaiting = (count: number) => isWaiting ? '—' : count;
-  const openCase = (id: string) => {
-    if (isDemoAccount) onOpenCase(id);
-    else window.location.hash = '#cases';
-  };
+  const openCase = (id: string) => onOpenCase(id);
   const maxChart = Math.max(1, ...live.chart.map(point => point.count));
 
   return <section className="business-overview">
