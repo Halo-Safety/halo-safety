@@ -187,12 +187,12 @@ function CaseDetails({ selected, onReviewCase, sessionCase }: {
       <div><dt>Observations</dt><dd>{selected.observations} grouped into 1 case</dd></div>
     </dl>
 
-    <h3>Evidence & provenance</h3>
-    <ul className="safety-evidence">{selected.evidence.map(item => <li key={item}>{item}</li>)}</ul>
-    <h3>Assessment</h3>
-    <p>{selected.assessment}</p>
-    <h3>Repeat-risk context</h3>
-    <p>{selected.pattern}</p>
+    {selected.evidence.length > 0 && <>
+      <h3>Evidence</h3>
+      <ul className="safety-evidence">{selected.evidence.map(item => <li key={item}>{item}</li>)}</ul>
+    </>}
+    {selected.assessment.trim() && <><h3>Assessment</h3><p>{selected.assessment}</p></>}
+    {selected.pattern.trim() && <><h3>Repeat-risk context</h3><p>{selected.pattern}</p></>}
 
     {selected.recommendedAction && <>
       <h3>Corrective action</h3>
