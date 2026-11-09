@@ -18,5 +18,5 @@ export default function SafetyModule({ view, isDemoAccount, sessionCases, prefer
   return isDemoAccount
     ? <SafetyWorkspace view={view} isDemoAccount sessionCases={sessionCases}
         preferredCaseId={preferredCaseId} onReviewCase={onReviewCase}/>
-    : <SafetyRecords view={view}/>;
+    : <SafetyRecords view={view} preferredCaseId={preferredCaseId}/>;
 }
