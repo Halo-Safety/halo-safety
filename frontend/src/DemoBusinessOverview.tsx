@@ -182,7 +182,7 @@ export default function DemoBusinessOverview({ isDemoAccount, sessionCases, onOp
       <div className="business-panel-head">
         <div><span className="panel-kicker">EVENT MONITORING</span><h2>Sensor activity</h2></div>
         <span className={'business-source-status ' + (live.online ? 'online' : '')}>
-          <RadioTower size={13}/>{live.online ? 'Connected' : 'Unavailable'}</span>
+          <RadioTower size={13}/>{isDemoAccount ? 'Ready' : live.online ? 'Connected' : 'Unavailable'}</span>
       </div>
       <p className="business-live-description">Proximity alert activity and resolution history. FTM ranges are shown separately in Telemetry.
         {live.error ? ' Event service unavailable: ' + live.error : ''}</p>
