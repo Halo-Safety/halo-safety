@@ -84,7 +84,7 @@ test('nonlinear result matches SciPy least_squares benchmark for noisy ranges', 
   assert.ok(Math.abs(result.x - 0.43029353) < 1e-4);
   assert.ok(Math.abs(result.y - 0.67979198) < 1e-4);
   assert.ok(Math.abs(cost(result, ranges) - 0.1641525048) < 1e-6);
-  assert.ok(cost(result, ranges) <= cost(linearEstimate(ranges)) + 1e-8);
+  assert.ok(cost(result, ranges) <= cost(linearEstimate(ranges), ranges) + 1e-8);
 });
 
 test('contradictory inputs minimize true range errors rather than squared-range differences', () => {
@@ -95,7 +95,7 @@ test('contradictory inputs minimize true range errors rather than squared-range 
   assert.ok(Math.abs(result.x - 0.92007164) < 1e-4);
   assert.ok(Math.abs(result.y - 0.89605677) < 1e-4);
   assert.equal(result.quality, 'rough');
-  assert.ok(cost(result, ranges) < cost(linearEstimate(ranges)));
+  assert.ok(cost(result, ranges) < cost(linearEstimate(ranges), ranges));
 });
 
 test('zero FTM readings produce finite rough estimate, not NaN or fake success', () => {
