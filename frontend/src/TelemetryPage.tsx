@@ -121,7 +121,7 @@ export default function TelemetryPage() {
             <span className={'hardware-state ' + (fresh ? 'fresh' : 'stale')}>
               <span className="hardware-dot"/>{fresh ? 'Reporting' : 'Stale / unknown'}</span>
           </div>
-          <div className="hardware-context"><HardHat size={15}/>{sample.worker_ref} · {vehicle?.site || 'Site not specified'} · {sample.is_demo ? 'TEST DATA' : 'DEVICE DATA'}</div>
+          <div className="hardware-context"><HardHat size={15}/>{sample.worker_ref} · {vehicle?.site || 'Site not specified'}</div>
           <div className="hardware-ranges">
             <div><span>Front anchor</span><strong>{distance(sample.front_m)}</strong></div>
             <div><span>Rear left</span><strong>{distance(sample.rear_left_m)}</strong></div>
@@ -139,12 +139,12 @@ export default function TelemetryPage() {
     </details>
     <section className="hardware-history">
       <div className="hardware-section-title"><h2>Recent ranging samples</h2><span>Last {Math.min(25, samples.length)} of {samples.length} loaded</span></div>
-      <div className="hardware-table-wrap"><table><thead><tr><th>Time received</th><th>Vehicle</th><th>Worker</th><th>Front</th><th>Rear left</th><th>Rear right</th><th>Quality</th><th>Source</th></tr></thead><tbody>
+      <div className="hardware-table-wrap"><table><thead><tr><th>Time received</th><th>Vehicle</th><th>Worker</th><th>Front</th><th>Rear left</th><th>Rear right</th><th>Quality</th><th>Gateway</th></tr></thead><tbody>
         {samples.slice(0, 25).map(item => <tr key={item.id}>
           <td>{new Date(item.received_at).toLocaleTimeString()}</td>
           <td>{vehiclesById.get(item.vehicle_id)?.name || item.vehicle_id.slice(0,8)}</td>
           <td>{item.worker_ref}</td><td>{distance(item.front_m)}</td><td>{distance(item.rear_left_m)}</td><td>{distance(item.rear_right_m)}</td><td>{qualityLabel(item.quality)}</td>
-          <td>{item.is_demo ? 'Test' : 'Device'}</td>
+          <td>{item.gateway_id.slice(0, 8)}</td>
         </tr>)}
       </tbody></table></div>
     </section>
