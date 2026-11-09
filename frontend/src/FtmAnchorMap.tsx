@@ -261,7 +261,7 @@ export default function FtmAnchorMap({ vehicles, samples, now }: Props) {
           </span>
         </div>}
         {layout && !estimate && <p className="ftm-map-missing">No usable position: three valid ranges and a non-degenerate anchor layout are required.</p>}
-        {latest && <p className="ftm-map-caption">Measurement from {latest.worker_ref} · received {ago(latest.received_at, now)} · {latest.is_demo ? 'TEST DEVICE' : 'DEVICE DATA'}. A stale position is not live tracking.</p>}
+        {latest && <p className="ftm-map-caption">Measurement from {latest.worker_ref} · received {ago(latest.received_at, now)} · gateway {latest.gateway_id.slice(0, 8)}. A stale position is not live tracking.</p>}
         {!latest && <p className="ftm-map-caption">No FTM measurements for this vehicle yet. Anchors can be configured before the gateway is connected.</p>}
       </div>
       <form className="ftm-anchor-editor" onSubmit={event => void save(event)}>
