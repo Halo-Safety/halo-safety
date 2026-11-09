@@ -296,11 +296,9 @@ export default function App({ onExit, userEmail }: AppProps) {
               <div>
                 <div className="panel-kicker">SCENARIO LAB / SANDBOX</div>
                 <h1 id="simulation-heading" className="display-heading">Simulation</h1>
-                <p className="simulator-intro">Plan routes, explore blind zones and see how warnings appear in Halo.</p>
+                <p className="simulator-intro">Plan routes, explore blind zones and see how warnings appear in Halo. This is a simulation; no real incidents are recorded.</p>
               </div>
-              <span className={'simulation-state ' + (simulationActive ? 'danger' : '')}>
-                <span className="badge-dot" />{simulationActive ? 'Simulated warning active' : 'Sandbox ready'}
-              </span>
+
             </div>
 
             <div className="simulation-stats" aria-label="This session's simulation results">
@@ -317,15 +315,8 @@ export default function App({ onExit, userEmail }: AppProps) {
                 <ArrowRight size={15}/>
               </button>
             </div>}
-            <div className="simulation-disclaimer">
-              <ShieldCheck size={16} />
-              <span><strong>Isolated test environment.</strong> Simulation events do not enter live alerts or the Supabase incident database. In the demo account, you can turn an alert into a browser-only sample case.</span>
-            </div>
-            <div className="sample-diagrams">
-              <span>Example vehicle diagrams</span>
-              <a href="/simulator/vehicle1.png" target="_blank" rel="noreferrer">Vehicle 1</a>
-              <a href="/simulator/vehicle-2.png" target="_blank" rel="noreferrer">Vehicle 2</a>
-            </div>
+
+
             <div className="simulator-surface">
               <iframe
                 ref={simulatorFrame}
