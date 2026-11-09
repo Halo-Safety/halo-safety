@@ -136,6 +136,11 @@ function CaseDetails({ selected, onReviewCase, sessionCase }: {
         <span className={'safety-pill ' + statusClass(selected.potentialSeverity)}>{selected.potentialSeverity} potential</span>
       </div>
     </div>
+    <ReviewEditor key={selected.id} selected={selected} sessionCase={Boolean(sessionCase)} onReviewCase={onReviewCase}/>
+    {selected.reviewNote && <div className="safety-reviewed-note">
+      <strong>Reviewer comment</strong><p>{selected.reviewNote}</p>
+      {selected.reviewedAt && <small>Reviewed {prettyDate(selected.reviewedAt)}</small>}
+    </div>}
 
     <h3>Operational context</h3>
     <dl className="safety-facts">
@@ -166,11 +171,6 @@ function CaseDetails({ selected, onReviewCase, sessionCase }: {
         <span className={'safety-pill ' + statusClass(selected.recommendedAction.status)}>{selected.recommendedAction.status}</span>
       </div>
     </>}
-    {selected.reviewNote && <div className="safety-reviewed-note">
-      <strong>Reviewer comment</strong><p>{selected.reviewNote}</p>
-      {selected.reviewedAt && <small>Reviewed {prettyDate(selected.reviewedAt)}</small>}
-    </div>}
-    <ReviewEditor key={selected.id} selected={selected} sessionCase={Boolean(sessionCase)} onReviewCase={onReviewCase}/>
     {impact && before !== null && after !== null && <div className="safety-impact">
       <h3>Intervention follow-up (sample)</h3>
       <div className="safety-rate-row"><span>Before</span><strong>{before.toFixed(1)} alerts / 100 vehicle-hours</strong></div>
