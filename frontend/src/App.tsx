@@ -187,6 +187,8 @@ export default function App({ onExit, userEmail }: AppProps) {
   const filteredHistory = useMemo(() => ordered.filter(matchesHistory), [ordered, matchesHistory]);
   const sampleHistory = useMemo(() => isTestAccount ? sortedEvents(sampleSensorEvents) : [], [isTestAccount]);
   const filteredSampleHistory = useMemo(() => sampleHistory.filter(matchesHistory), [sampleHistory, matchesHistory]);
+  // Demo fixtures remain isolated in memory; render one chronological table without synthetic database writes.
+  const visibleHistory = useMemo(() => sortedEvents([...filteredHistory, ...filteredSampleHistory]), [filteredHistory, filteredSampleHistory]);
   const sampleActive = useMemo(() => isTestAccount ? getActiveEvents(sampleSensorEvents) : [], [isTestAccount]);
   const active = useMemo(() => getActiveEvents(events), [events]);
   const chart = useMemo(() => recentChart(events), [events]);
@@ -412,13 +414,13 @@ export default function App({ onExit, userEmail }: AppProps) {
           {historyView && <>
             <div className="page-heading">
               <div><div className="panel-kicker">MONITORING / AUDIT TRAIL</div><h1 className="display-heading">Event history</h1>
-                <p>Chronological record of live sensor events, separate from simulated scenarios and reviewed safety cases.</p></div>
-              <span className="subtle-tag">{isTestAccount ? events.length + ' live · ' + sampleHistory.length + ' sample' : events.length + ' records loaded'}</span>
+                <p>Chronological record of proximity alerts and alert clears.</p></div>
+              <span className="subtle-tag">{isTestAccount ? events.length + sampleHistory.length : events.length} records</span>
             </div>
             {error && <div className="error-banner" role="alert"><AlertTriangle size={18}/><span>Unable to load history: {error}</span></div>}
             <section className="panel history-panel">
-              <div className="panel-header"><div><div className="panel-kicker">LIVE EVENT LOG</div><h2>Sensor event history</h2></div>
-                <span className="subtle-tag">{filteredHistory.length + filteredSampleHistory.length} matching{isTestAccount ? ' · sample entries labeled' : ''}</span></div>
+              <div className="panel-header"><div><div className="panel-kicker">EVENT LOG</div><h2>Event history</h2></div>
+                <span className="subtle-tag">{visibleHistory.length} matching</span></div>
               <div className="history-toolbar">
                 <label>Filter
                   <select value={historyFilter} onChange={event => setHistoryFilter(event.target.value as 'all' | 'alerts' | 'cleared')}>
@@ -432,16 +434,8 @@ export default function App({ onExit, userEmail }: AppProps) {
               <div className="table-scroller"><table>
                 <thead><tr><th>Event</th><th>Worker</th><th>Machine</th><th>RSSI</th><th>Timestamp</th></tr></thead>
                 <tbody>
-                  {filteredHistory.map((item,index) => <tr key={'live-' + String(item.id ?? index) + ':' + String(item.timestamp ?? '')}>
+                  {visibleHistory.map((item,index) => <tr key={String(item.id ?? index) + ':' + String(item.timestamp ?? '')}>
                     <td><EventBadge type={eventType(item)}/></td>
-                    <td className="strong-cell">{item.worker_id}</td>
-                    <td>{item.machine_id}</td>
-                    <td className="mono-cell">{typeof item.rssi === 'number' ? item.rssi + ' dBm' : '—'}</td>
-                    <td className="date-cell">{formatTime(item.timestamp)}</td>
-                  </tr>)}
-                  {filteredSampleHistory.length > 0 && <tr className="sample-history-heading"><td colSpan={5}>Example events · fictional sample data</td></tr>}
-                  {filteredSampleHistory.map((item,index) => <tr className="sample-history-row" key={'sample-' + String(item.id ?? index)}>
-                    <td><div className="sample-event-type"><EventBadge type={eventType(item)}/><span className="sample-inline-label">Sample</span></div></td>
                     <td className="strong-cell">{item.worker_id}</td>
                     <td>{item.machine_id}</td>
                     <td className="mono-cell">{typeof item.rssi === 'number' ? item.rssi + ' dBm' : '—'}</td>
@@ -449,9 +443,8 @@ export default function App({ onExit, userEmail }: AppProps) {
                   </tr>)}
                 </tbody>
               </table>
-                {filteredHistory.length + filteredSampleHistory.length === 0 && <div className="empty-table">No events match the current filters.</div>}
+                {visibleHistory.length === 0 && <div className="empty-table">No events match the current filters.</div>}
               </div>
-              <div className="panel-foot">Live events come from Supabase. Sample rows are illustrative and never stored as incidents.</div>
             </section>
             {isTestAccount && simulationEvents.length > 0 && <section className="panel monitoring-sandbox">
               <div className="panel-header"><div><div className="panel-kicker">SANDBOX / NOT REAL SENSOR DATA</div><h2>Simulation session history</h2></div>
