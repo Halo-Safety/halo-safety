@@ -7,7 +7,7 @@
 
 *natHacks 2026 · Debug Warriors · Construction & Manufacturing*
 
-[**Web App**](https://halo-safety.vercel.app) · [**Try the Simulator**](https://halo-safety.vercel.app/#simulation) · [**FTM Gateway Setup**](docs/ftm-cloud-uplink.md) · [**Project Roadmap**](roadmap.md)
+[**Web App**](https://halo-safety.vercel.app) · [**Try the Simulator**](https://halo-safety.vercel.app/#simulation) · [**FTM Gateway Setup**](docs/ftm-cloud-uplink.md)
 
 <sub>Access to the web app is invitation-managed. Ask the team for a walkthrough account.</sub>
 
@@ -115,7 +115,7 @@ We also learned a lot about integrating ESP32 firmware, Python collection, a Rea
 
 Built by **Debug Warriors** — Thomas, Jerry, Vlad, and Ruslan — for **natHacks 2026**.
 
-[Contributors](https://github.com/Halo-Safety/halo-safety/graphs/contributors) · [Pull requests](https://github.com/Halo-Safety/halo-safety/pulls) · [Project roadmap](roadmap.md)
+[Contributors](https://github.com/Halo-Safety/halo-safety/graphs/contributors) · [Pull requests](https://github.com/Halo-Safety/halo-safety/pulls)
 
 <div align="center">
 
