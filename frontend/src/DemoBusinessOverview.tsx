@@ -3,6 +3,7 @@ import { Activity, AlertTriangle, ArrowRight, ClipboardCheck, RadioTower, Truck,
 import { demoCases, demoVehicles, mergeDemoCases, type DemoCase } from './demoSafetyData';
 import { listSafetyOrganizations, loadSafetyData, type SafetyCase, type CorrectiveAction, type Vehicle } from './safetyApi';
 import './DemoBusinessOverview.css';
+import { getSelectedSafetyOrg } from './safetyOrgPreference';
 
 export type LiveOverviewStats = {
   totalSignals: number;
@@ -52,7 +53,8 @@ export default function DemoBusinessOverview({ isDemoAccount, sessionCases, onOp
     void (async () => {
       try {
         const available = await listSafetyOrganizations();
-        const first = available[0];
+        const preferred = getSelectedSafetyOrg();
+        const first = available.find(org => org.id === preferred) || available[0];
         if (!first) {
           if (!cancelled) setOrgError('No organization membership found.');
           return;
