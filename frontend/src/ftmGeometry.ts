@@ -131,7 +131,7 @@ function solve(anchors: readonly Anchor[], distances: readonly number[]): [numbe
     if (!Number.isFinite(cost)) continue;
     let lambda = 0.01;
 
-    for (let iteration = 0; iteration < 80; iteration++) {
+    for (let iteration = 0; iteration < 160; iteration++) {
       let jxx = 0, jxy = 0, jyy = 0, gx = 0, gy = 0;
       for (let i = 0; i < 3; i++) {
         const dx = x - anchors[i].x, dy = y - anchors[i].y;
