@@ -26,5 +26,6 @@ jobs:
       - run: npm run test:geometry
       - run: npm run test:review
       - run: npm run test:workflow
+      - run: npm run test:ui-audit
       - run: npm run test:samples
       - run: npm run test:simulator-layout
