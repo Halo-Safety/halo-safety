@@ -138,7 +138,7 @@ export function reviewDemoCase(original: DemoCase, input: DemoReviewInput, times
   }
   const action = input.recommendedAction;
   if (action && (!action.title.trim() || !action.owner.trim() ||
-    !/^\\d{4}-\\d{2}-\\d{2}$/.test(action.due) ||
+    !/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(action.due) ||
     Number.isNaN(new Date(action.due + 'T12:00:00').getTime()))) {
     throw new Error('Complete the action description, owner and valid due date.');
   }
