@@ -37,15 +37,26 @@ def read_prompt(port, timeout):
     raise TimeoutError("No FTM prompt from worker. Check its firmware and port.")
 
 
+def open_worker_port(port_name):
+    """Configure DTR/RTS before opening the ESP32 serial port.
+
+    A Serial(port=None) instance must be opened before entering its context
+    manager: Serial.__enter__ opens it immediately and otherwise raises when
+    port is still None.
+    """
+    port = serial.Serial(baudrate=115200, timeout=0.25, write_timeout=2, port=None)
+    port.port = port_name
+    port.dtr = False
+    port.rts = False
+    port.open()
+    return port
+
+
 def poll_ftm(port_name):
     while True:
         try:
             publish(f"Connecting to {port_name}…")
-            with serial.Serial(baudrate=115200, timeout=0.25, write_timeout=2, port=None) as port:
-                port.port = port_name
-                port.dtr = False
-                port.rts = False
-                port.open()
+            with open_worker_port(port_name) as port:
                 port.reset_input_buffer()
                 port.write(b"\r")
                 read_prompt(port, 10)
