@@ -92,15 +92,12 @@ export default function TelemetryPage() {
       <div>
         <div className="hardware-kicker">SENSOR INTEGRATIONS / WI-FI FTM</div>
         <h1 className="display-heading">Telemetry</h1>
-        <p>Live Wi-Fi FTM range estimates uploaded by local ESP32 gateways.</p>
+        <p>Live Wi-Fi FTM range estimates uploaded by local ESP32 gateways. Experimental measurements, not verified worker positioning; an active uplink is not a safety guarantee.</p>
       </div>
       <button type="button" className="hardware-refresh" onClick={() => {
         setLoading(true);
         void refresh().catch(e => setError(e instanceof Error ? e.message : 'Refresh failed')).finally(() => setLoading(false));
       }} disabled={loading}><RefreshCw size={15}/> Refresh</button>
-    </div>
-    <div className="hardware-notice"><ShieldCheck size={18} />
-      <span><strong>Experimental ranging, not safety-certified positioning.</strong> Measurement freshness indicates an uplink, not a verified safe working area. Browser data is scoped by your Supabase organization membership. No readings automatically generate near-miss cases.</span>
     </div>
     {error && <div className="hardware-error" role="alert">{error}</div>}
     <div className="hardware-stat-grid">
