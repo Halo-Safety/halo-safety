@@ -3,6 +3,7 @@ import { Crosshair, MapPinned, RefreshCw, Save, ShieldAlert } from 'lucide-react
 import { supabase } from './supabase';
 import { listSafetyOrganizations, type SafetyOrg } from './safetyApi';
 import { estimateFtm, getAnchors, validateLayout, type FtmLayout } from './ftmGeometry';
+import { DEMO_REPLAY_GATEWAY, DEMO_REPLAY_INTERVAL_MS, demoReplayWaypoints } from './demoFtmReplay';
 import './FtmAnchorMap.css';
 
 type Vehicle = { id: string; organization_id: string; asset_tag: string; name: string; site: string };
@@ -77,6 +78,9 @@ function makeProjection(points: PlotPoint[]) {
 export default function FtmAnchorMap({ vehicles, samples, now }: Props) {
   const [selectedId, setSelectedId] = useState('');
   const [gatewayId, setGatewayId] = useState('');
+  const [replayIndex, setReplayIndex] = useState(0);
+  const [replayCycle, setReplayCycle] = useState(0);
+  const replayMode = gatewayId === DEMO_REPLAY_GATEWAY;
   const [layouts, setLayouts] = useState<FtmLayout[]>([]);
   const [memberships, setMemberships] = useState<SafetyOrg[]>([]);
   const [draft, setDraft] = useState<Draft>(emptyDraft);
@@ -107,6 +111,14 @@ export default function FtmAnchorMap({ vehicles, samples, now }: Props) {
     return () => { cancelled = true; };
   }, [reload]);
 
+  // Local preview only. Each synthetic map point appears after an 11 s pause.
+  // No FTM ranges are fabricated or uploaded to Supabase.
+  useEffect(() => {
+    if (!replayMode || replayIndex >= demoReplayWaypoints.length - 1) return;
+    const timeout = window.setTimeout(() => setReplayIndex(index => index + 1), DEMO_REPLAY_INTERVAL_MS);
+    return () => window.clearTimeout(timeout);
+  }, [replayMode, replayIndex, replayCycle]);
+
   const selected = vehicles.find(v => v.id === selectedId) ??
     vehicles.find(v => samples.some(sample => sample.vehicle_id === v.id)) ??
     vehicles.find(v => v.asset_tag === 'FTM-LAB-01') ?? vehicles[0];
@@ -123,7 +135,7 @@ export default function FtmAnchorMap({ vehicles, samples, now }: Props) {
   const vehicleSamples = samples.filter(sample => sample.vehicle_id === selected?.id);
   const gatewaySamples = vehicleSamples.filter(sample =>
     sample.gateway_id === (vehicleSamples.some(item => item.gateway_id === gatewayId) ? gatewayId : vehicleSamples[0]?.gateway_id));
-  const latest = gatewaySamples[0];
+  const latest = replayMode ? undefined : gatewaySamples[0];
   const ageMs = latest ? now - new Date(latest.received_at).getTime() : Infinity;
   const fresh = ageMs >= 0 && ageMs < 30_000;
   const candidate = selected ? parseDraft(draft, selected) : null;
@@ -135,6 +147,8 @@ export default function FtmAnchorMap({ vehicles, samples, now }: Props) {
   // Keep measured anchors visible, but never plot an untrusted worker position.
   const plotEstimate = fresh && estimate?.quality === 'self_consistent'
     && estimate.spread_m <= 0.5 ? estimate : null;
+  const replayPoint = demoReplayWaypoints[replayIndex];
+  const displayedWorker = replayMode ? replayPoint : plotEstimate;
   const trail = useMemo(() => {
     if (!layout || !showTrail || !latest) return [];
     const cutoff = new Date(latest.received_at).getTime() - 180_000;
@@ -142,9 +156,12 @@ export default function FtmAnchorMap({ vehicles, samples, now }: Props) {
       .slice(0, 20).reverse().map(s => estimateFtm(layout, s))
       .filter((position): position is NonNullable<typeof position> => position !== null);
   }, [layout, showTrail, latest?.received_at, gatewaySamples.map(s => s.gateway_id + s.received_at).join('|')]);
+  const displayedTrail = replayMode ? demoReplayWaypoints.slice(0, replayIndex + 1) : trail;
+  // A fixed viewport for replay prevents the grid from jumping between samples.
   const allPoints = anchors ? [
     ...anchors.map(a => ({ x: a.x, y: a.y })),
-    ...(plotEstimate ? [{ x: plotEstimate.x, y: plotEstimate.y }] : []),
+    ...(replayMode ? [{ x: -3, y: -3 }, { x: 4, y: 7 }] :
+      plotEstimate ? [{ x: plotEstimate.x, y: plotEstimate.y }] : []),
   ] : [];
   const projected = allPoints.length ? makeProjection(allPoints) : null;
 
@@ -183,24 +200,33 @@ export default function FtmAnchorMap({ vehicles, samples, now }: Props) {
     <div className="ftm-map-controls">
       <label>Vehicle
         <select value={selected?.id || ''} onChange={event => {
-          setSelectedId(event.target.value); setGatewayId(''); setSaved(null); setError(null);
+          setSelectedId(event.target.value); setGatewayId(''); setReplayIndex(0); setSaved(null); setError(null);
         }}>
           {vehicles.map(v => <option key={v.id} value={v.id}>{v.asset_tag} · {v.name}</option>)}
         </select>
       </label>
-      {vehicleSamples.length > 1 && <label>Worker / gateway
-        <select value={latest?.gateway_id || ''} onChange={event => setGatewayId(event.target.value)}>
+      {selected && <label>Worker / gateway
+        <select value={replayMode ? DEMO_REPLAY_GATEWAY : latest?.gateway_id || ''} onChange={event => {
+          setGatewayId(event.target.value);
+          setReplayIndex(0);
+          setReplayCycle(cycle => cycle + 1);
+        }}>
           {Array.from(new Map(vehicleSamples.map(s => [s.gateway_id, s])).values()).map(s =>
             <option key={s.gateway_id} value={s.gateway_id}>{s.worker_ref} · {s.gateway_id.slice(0, 8)}</option>)}
+          <option value={DEMO_REPLAY_GATEWAY}>Worker walk · demo replay</option>
         </select>
       </label>}
+      {replayMode && <div className="ftm-replay-control">
+        <span>Replay {replayIndex + 1}/{demoReplayWaypoints.length}{replayIndex === demoReplayWaypoints.length - 1 ? ' · finished' : ' · 11 s updates'}</span>
+        <button type="button" onClick={() => { setReplayIndex(0); setReplayCycle(cycle => cycle + 1); }}>Restart</button>
+      </div>}
       <label className="ftm-map-trail"><input type="checkbox" checked={showTrail} onChange={event => setShowTrail(event.target.checked)}/> Show recent estimates</label>
     </div>
     {error && <div className="hardware-error" role="alert">{error}</div>}
     {saved && <div className="ftm-map-saved" role="status">{saved}</div>}
     <div className="ftm-map-layout">
       <div className="ftm-map-visual">
-        <svg viewBox="0 0 650 420" role="img" aria-label="Plan view showing measured ESP32 anchor positions and the estimated worker position">
+        <svg viewBox="0 0 650 420" role="img" aria-label="Plan view showing ESP32 anchor positions and worker position, or a synthetic demonstration replay when selected">
           <rect x="0" y="0" width="650" height="420" rx="12" fill="#f4f9fb"/>
           {projected && <>
             {projected.xTicks.map(x => <g key={'x'+x}>
@@ -213,8 +239,8 @@ export default function FtmAnchorMap({ vehicles, samples, now }: Props) {
             </g>)}
             <polygon points={anchors!.map(a => `${projected.toX(a.x)},${projected.toY(a.y)}`).join(' ')}
               fill="#d6ebf5" fillOpacity=".5" stroke="#7ea8bd" strokeWidth="2" strokeDasharray="6 6"/>
-            {showTrail && trail.length > 1 && <polyline
-              points={trail.map(p => `${projected.toX(p.x)},${projected.toY(p.y)}`).join(' ')}
+            {showTrail && displayedTrail.length > 1 && <polyline
+              points={displayedTrail.map(p => `${projected.toX(p.x)},${projected.toY(p.y)}`).join(' ')}
               fill="none" stroke="#c8955b" strokeWidth="2.2" strokeDasharray="3 6" opacity=".6"/>}
             {anchors!.map(anchor => <g key={anchor.key}>
               <circle cx={projected.toX(anchor.x)} cy={projected.toY(anchor.y)} r="9"
@@ -226,15 +252,14 @@ export default function FtmAnchorMap({ vehicles, samples, now }: Props) {
                 textAnchor="middle" fontSize="10" fill="#5b8397"
                 stroke="#f4f9fb" strokeWidth="3" paintOrder="stroke">({anchor.x.toFixed(2)}, {anchor.y.toFixed(2)})</text>
             </g>)}
-            {plotEstimate && <g>
-              <circle cx={projected.toX(plotEstimate.x)} cy={projected.toY(plotEstimate.y)} r="15"
-                fill="#f6a851"
-                stroke="#ba722c" strokeWidth="3"
-                strokeDasharray={undefined}/>
-              <circle cx={projected.toX(plotEstimate.x)} cy={projected.toY(plotEstimate.y)} r="3" fill="#ba722c"/>
-              <text x={projected.toX(plotEstimate.x)} y={projected.toY(plotEstimate.y)-24}
+            {displayedWorker && <g>
+              <circle cx={projected.toX(displayedWorker.x)} cy={projected.toY(displayedWorker.y)} r="15"
+                fill="#f6a851" stroke="#ba722c" strokeWidth="3"
+                strokeDasharray={replayMode ? '5 3' : undefined}/>
+              <circle cx={projected.toX(displayedWorker.x)} cy={projected.toY(displayedWorker.y)} r="3" fill="#ba722c"/>
+              <text x={projected.toX(displayedWorker.x)} y={projected.toY(displayedWorker.y)-24}
                 textAnchor="middle" fontSize="13" fontWeight="700" fill="#9d5d1e"
-                stroke="#f4f9fb" strokeWidth="4" paintOrder="stroke">Worker · estimate</text>
+                stroke="#f4f9fb" strokeWidth="4" paintOrder="stroke">{replayMode ? 'Worker · demo replay' : 'Worker · estimate'}</text>
             </g>}
             <rect x="16" y="17" rx="7" width="176" height="38" fill="white" fillOpacity=".88"/>
             <line x1="28" y1="37" x2={28 + projected.step * projected.scale} y2="37" stroke="#365f78" strokeWidth="2"/>
@@ -250,19 +275,23 @@ export default function FtmAnchorMap({ vehicles, samples, now }: Props) {
           <text x="333" y="20" fontSize="12" textAnchor="start" fill="#55778d">+Y ↑</text>
         </svg>
         <div className="ftm-map-legend"><span><i className="ftm-legend-anchor"/> ESP32 anchor</span>
-          <span><i className="ftm-legend-worker"/> Worker estimate (only when usable)</span>
-          <span>{fresh ? 'Live readings' : 'Stale / no live data'}</span>
-          <span>Solver: nonlinear least squares (L2)</span></div>
-        {estimate && <div className={'ftm-map-quality ' + (!plotEstimate ? 'uncertain' : '')}>
+          <span><i className="ftm-legend-worker"/> {replayMode ? 'Synthetic worker position' : 'Worker estimate (only when usable)'}</span>
+          <span>{replayMode ? 'Demo replay · no gateway uplink' : fresh ? 'Live readings' : 'Stale / no live data'}</span>
+          {!replayMode && <span>Solver: nonlinear least squares (L2)</span>}</div>
+        {replayMode && <p className="ftm-map-caption">
+          Demo replay · {replayPoint.phase} · X {metres(replayPoint.x)}, Y {metres(replayPoint.y)}.
+          Synthetic position with about {replayPoint.offset_m.toFixed(1)} m offset; not an ESP32 measurement.
+        </p>}
+        {!replayMode && estimate && <div className={'ftm-map-quality ' + (!plotEstimate ? 'uncertain' : '')}>
           <Crosshair size={16}/>
           <span>{fresh ? 'Latest' : 'Last known'} estimate: X <strong>{metres(estimate.x)}</strong>, Y <strong>{metres(estimate.y)}</strong>.
             Residual <strong>{metres(estimate.residual_m)}</strong>; ±range sensitivity <strong>{metres(estimate.spread_m)}</strong>.
             {!fresh ? ' Stale reading — marker hidden.' : estimate.quality === 'rough' ? ' Inconsistent measurements — marker hidden.' : ' Geometrically self-consistent, but real-world accuracy is not verified.'}
           </span>
         </div>}
-        {layout && !estimate && <p className="ftm-map-missing">No usable position: three valid ranges and a non-degenerate anchor layout are required.</p>}
-        {latest && <p className="ftm-map-caption">Measurement from {latest.worker_ref} · received {ago(latest.received_at, now)} · {latest.is_demo ? 'TEST DEVICE' : 'DEVICE DATA'}. A stale position is not live tracking.</p>}
-        {!latest && <p className="ftm-map-caption">No FTM measurements for this vehicle yet. Anchors can be configured before the gateway is connected.</p>}
+        {!replayMode && layout && !estimate && <p className="ftm-map-missing">No usable position: three valid ranges and a non-degenerate anchor layout are required.</p>}
+        {!replayMode && latest && <p className="ftm-map-caption">Measurement from {latest.worker_ref} · received {ago(latest.received_at, now)} · {latest.is_demo ? 'TEST DEVICE' : 'DEVICE DATA'}. A stale position is not live tracking.</p>}
+        {!replayMode && !latest && <p className="ftm-map-caption">No FTM measurements for this vehicle yet. Anchors can be configured before the gateway is connected.</p>}
       </div>
       <form className="ftm-anchor-editor" onSubmit={event => void save(event)}>
         <div className="ftm-anchor-editor-head"><h3>ESP32 anchor coordinates</h3><span>{dirty ? 'Unsaved preview' : savedLayout ? 'Saved in Supabase' : 'Not configured'}</span></div>
