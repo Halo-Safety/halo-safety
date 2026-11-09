@@ -34,7 +34,9 @@ Halo combines ESP32 wireless-ranging experiments with a configurable blind-zone 
 
 ## Try Halo
 
-1. Open the [Halo web app](https://halo-safety.vercel.app) and sign in with a team-provided account. The app does not offer public self-registration.
+1. Open the [Halo web app](https://halo-safety.vercel.app) and sign in with a team-provided account. The app does not offer public self-registration. Use the demo account.
+   - Email: `test@ualberta.ca`
+   - Password: `abcde12345`
 2. **Overview:** Explore cases awaiting review, corrective actions, equipment, and the sensor-activity section.
 3. **Active alerts & Event history:** See proximity warnings, their timestamps, and alert-cleared events.
 4. **Simulation:** [Open the simulator](https://halo-safety.vercel.app/#simulation), move a worker into a vehicle's blind zone, or configure worker/vehicle routes and run a scenario.
