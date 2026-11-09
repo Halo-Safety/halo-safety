@@ -136,16 +136,17 @@ export default function FtmAnchorMap({ vehicles, samples, now }: Props) {
   const plotEstimate = fresh && estimate?.quality === 'self_consistent'
     && estimate.spread_m <= 0.5 ? estimate : null;
   const trail = useMemo(() => {
-    if (!layout || !showTrail || !latest) return [];
+    if (!layout || !showTrail || !latest || !fresh) return [];
     const cutoff = new Date(latest.received_at).getTime() - 180_000;
     return gatewaySamples.filter(s => new Date(s.received_at).getTime() >= cutoff)
       .slice(0, 20).reverse().map(s => estimateFtm(layout, s))
       .filter((position): position is NonNullable<typeof position> =>
         position !== null && position.quality === 'self_consistent' && position.spread_m <= 0.5);
-  }, [layout, showTrail, latest?.received_at, gatewaySamples.map(s => s.gateway_id + s.received_at).join('|')]);
+  }, [layout, showTrail, fresh, latest?.received_at, gatewaySamples.map(s => s.gateway_id + s.received_at).join('|')]);
   const allPoints = anchors ? [
     ...anchors.map(a => ({ x: a.x, y: a.y })),
     ...(plotEstimate ? [{ x: plotEstimate.x, y: plotEstimate.y }] : []),
+    ...trail.map(position => ({ x: position.x, y: position.y })),
   ] : [];
   const projected = allPoints.length ? makeProjection(allPoints) : null;
 
