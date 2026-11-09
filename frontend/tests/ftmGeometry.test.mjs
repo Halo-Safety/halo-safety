@@ -56,3 +56,58 @@ test('contradictory valid ranges are explicitly a rough estimate', () => {
   assert.equal(result.quality, 'rough');
   assert.ok(result.residual_m > layout.assumed_range_error_m);
 });
+
+/** Ordinary L2 residual objective, the same one used in Vlad's SciPy locator.py. */
+function cost(point, ranges) {
+  const anchors = getAnchors(layout);
+  const values = [ranges.front_m, ranges.rear_left_m, ranges.rear_right_m];
+  return anchors.reduce((sum, anchor, index) => {
+    const residual = Math.hypot(point.x - anchor.x, point.y - anchor.y) - values[index];
+    return sum + residual * residual;
+  }, 0);
+}
+function linearEstimate(ranges) {
+  const [p0, p1, p2] = getAnchors(layout);
+  const [r0, r1, r2] = [ranges.front_m, ranges.rear_left_m, ranges.rear_right_m];
+  const a = p1.x - p0.x, b = p1.y - p0.y, c = p2.x - p0.x, d = p2.y - p0.y;
+  const det = a * d - b * c;
+  const u = ((r0 - r1) * (r0 + r1) + a * a + b * b) / 2;
+  const v = ((r0 - r2) * (r0 + r2) + c * c + d * d) / 2;
+  return { x: p0.x + (d * u - b * v) / det, y: p0.y + (a * v - c * u) / det };
+}
+
+test('nonlinear result matches SciPy least_squares benchmark for noisy ranges', () => {
+  // Generated independently with scipy.optimize.least_squares using multiple seeds.
+  const ranges = { front_m: 1.2, rear_left_m: 1.65, rear_right_m: 1.53 };
+  const result = estimateFtm(layout, ranges);
+  assert.ok(result);
+  assert.ok(Math.abs(result.x - 0.43029353) < 1e-4);
+  assert.ok(Math.abs(result.y - 0.67979198) < 1e-4);
+  assert.ok(Math.abs(cost(result, ranges) - 0.1641525048) < 1e-6);
+  assert.ok(cost(result, ranges) <= cost(linearEstimate(ranges), ranges) + 1e-8);
+});
+
+test('contradictory inputs minimize true range errors rather than squared-range differences', () => {
+  // An intentionally inconsistent FTM triple.
+  const ranges = { front_m: 0.05, rear_left_m: 3.5, rear_right_m: 0.01 };
+  const result = estimateFtm(layout, ranges);
+  assert.ok(result);
+  assert.ok(Math.abs(result.x - 0.92007164) < 1e-4);
+  assert.ok(Math.abs(result.y - 0.89605677) < 1e-4);
+  assert.equal(result.quality, 'rough');
+  assert.ok(cost(result, ranges) < cost(linearEstimate(ranges), ranges));
+});
+
+test('zero FTM readings produce finite rough estimate, not NaN or fake success', () => {
+  const ranges = { front_m: 0, rear_left_m: 1.2, rear_right_m: 0 };
+  const result = estimateFtm(layout, ranges);
+  assert.ok(result);
+  assert.ok(Number.isFinite(result.x) && Number.isFinite(result.y));
+  assert.ok(Number.isFinite(result.residual_m) && Number.isFinite(result.spread_m));
+  assert.equal(result.quality, 'rough');
+});
+
+test('repeated calls on the same ranges are deterministic', () => {
+  const ranges = { front_m: 1.2, rear_left_m: 1.65, rear_right_m: 1.53 };
+  assert.deepEqual(estimateFtm(layout, ranges), estimateFtm(layout, ranges));
+});

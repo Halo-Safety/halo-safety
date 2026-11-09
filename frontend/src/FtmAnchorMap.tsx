@@ -247,7 +247,8 @@ export default function FtmAnchorMap({ vehicles, samples, now }: Props) {
         </svg>
         <div className="ftm-map-legend"><span><i className="ftm-legend-anchor"/> ESP32 anchor</span>
           <span><i className="ftm-legend-worker"/> Worker estimate</span>
-          <span>{fresh ? 'Live readings' : 'Stale / no live data'}</span></div>
+          <span>{fresh ? 'Live readings' : 'Stale / no live data'}</span>
+          <span>Solver: nonlinear least squares (L2)</span></div>
         {estimate && <div className={'ftm-map-quality ' + (estimate.quality === 'rough' || !fresh ? 'uncertain' : '')}>
           <Crosshair size={16}/>
           <span>{fresh ? 'Latest' : 'Last known'} estimate: X <strong>{metres(estimate.x)}</strong>, Y <strong>{metres(estimate.y)}</strong>.

@@ -71,8 +71,13 @@ live samples. A worker estimate requires valid FTM distances to **all
 three** anchors.
 
 The site subtracts the optional per-anchor `bias` in metres and
-calculates a 2D position from the three corrected distances using the
-same linearized trilateration algorithm as the local Flask locator.
+calculates a 2D position from the three corrected distances using a
+browser-side nonlinear least-squares optimizer (ordinary L2 loss), minimizing
+the squared errors between measured distances and actual Euclidean distances.
+This matches the objective of `halo_nat/locator.py` (SciPy `least_squares`),
+though the React implementation uses its own damped Gauss-Newton iterations
+and does not ship SciPy. The separate local Flask page still uses the existing
+linearized estimator in `halo_nat/worker_locator.py`.
 The displayed residual measures the inconsistency of the three ranges;
 the ±range sensitivity uses an **assumed** error for a rough geometry
 test, **not** a measured confidence interval. Rough/unstable estimates
