@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Activity, Clock3, HardHat, RadioTower, RefreshCw, ShieldCheck, WifiOff } from 'lucide-react';
 import { supabase } from './supabase';
+import FtmAnchorMap from './FtmAnchorMap';
 import './TelemetryPage.css';
 
 type Sample = {
@@ -22,7 +23,7 @@ type Sample = {
   quality: 'ranges_only' | 'rough_estimate' | 'self_consistent' | 'partial';
   is_demo: boolean;
 };
-type Vehicle = { id: string; asset_tag: string; name: string; site: string };
+type Vehicle = { id: string; organization_id: string; asset_tag: string; name: string; site: string };
 
 const TIMEOUT_MS = 30_000;
 function ago(date: string, now: number) {
@@ -50,7 +51,7 @@ export default function TelemetryPage() {
       supabase.from('ftm_measurements')
         .select('id,organization_id,gateway_id,vehicle_id,worker_ref,sample_id,measured_at,received_at,front_m,rear_left_m,rear_right_m,x_m,y_m,residual_m,spread_m,quality,is_demo')
         .order('received_at', { ascending: false }).limit(150),
-      supabase.from('vehicles').select('id,asset_tag,name,site'),
+      supabase.from('vehicles').select('id,organization_id,asset_tag,name,site'),
     ]);
     if (sampleResponse.error) throw Error(sampleResponse.error.message);
     if (vehicleResponse.error) throw Error(vehicleResponse.error.message);
@@ -107,6 +108,7 @@ export default function TelemetryPage() {
       <div><span>Recent gateway sources</span><strong>{latest.length}</strong><small>Latest 150 records queried</small></div>
       <div><span>Measurements loaded</span><strong>{samples.length}</strong><small>Live FTM sample history</small></div>
     </div>
+    <FtmAnchorMap vehicles={vehicles} samples={samples} now={now}/>
     <div className="hardware-section-title"><h2>Gateway measurements</h2><span>{lastSync ? 'Last checked ' + lastSync.toLocaleTimeString() : 'Connecting…'}</span></div>
     {latest.length === 0 && <div className="hardware-empty"><WifiOff size={28}/>
       <strong>{loading ? 'Checking for telemetry…' : 'No FTM readings yet'}</strong>
