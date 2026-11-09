@@ -22,6 +22,7 @@
   aside li{font-size:11px;line-height:1.5;color:#748b9b;margin:7px 0}
   .controls{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:12px 0}
   fieldset{border:0;padding:0;margin:0;min-width:0}
+  #setup{margin-top:18px;padding-top:14px;border-top:1px solid #e5edf2}
   #setup>.controls{padding-bottom:11px;border-bottom:1px solid #edf2f6}
   #setup>.controls:last-child{border-bottom:0}
   label{font-size:11px;color:#6b8495}
@@ -41,7 +42,7 @@
   .map-legend span::before{content:"";display:inline-block;width:.8em;height:.8em;margin-right:.5em;border-radius:2px;background:var(--swatch)}
   #map[data-reference="true"] #vehicle-body{fill-opacity:.20}
   #map[data-reference="true"] #vehicle-label{fill:#173650}
-  #status{min-height:2.7em;color:#648298;font-size:11px;line-height:1.6}
+  #status{color:#648298;font-size:11px;line-height:1.6;margin:10px 0 6px}
   .warning{color:#c66f58!important;font-weight:800}
   ol{padding-left:18px;overflow-wrap:anywhere}
   #clock{font-size:12px;font-weight:750;color:#407f9e;min-width:48px}
@@ -60,6 +61,44 @@
 </header>
 <main>
   <section aria-label="Simulator controls and map">
+    <svg id="map" viewBox="0 0 800 500" tabindex="0" aria-label="Vehicle diagram. In Move worker mode, use the arrow keys to move the worker.">
+      <g id="sample">
+        <rect x="0" y="0" width="800" height="500" fill="#f7f9fb"/>
+      </g>
+      <image id="diagram" visibility="hidden"/>
+      <defs>
+        <pattern id="meter-grid" patternUnits="userSpaceOnUse">
+          <path id="grid-line" fill="none" stroke="#237552" stroke-opacity=".45" vector-effect="non-scaling-stroke"/>
+        </pattern>
+      </defs>
+      <rect id="grid" width="100%" height="100%" fill="url(#meter-grid)" display="none"/>
+      <polyline id="worker-route" fill="none" stroke="#145d9b" stroke-width="3" vector-effect="non-scaling-stroke"/>
+      <polyline id="vehicle-route" fill="none" stroke="#864618" stroke-width="3" stroke-dasharray="7 4" vector-effect="non-scaling-stroke"/>
+      <g id="vehicle-pose">
+        <g id="zones" fill="#ef7276" fill-opacity=".32" stroke="#b52836" stroke-width="2"/>
+        <polygon id="vehicle-clearance" fill="none" stroke="#eaa237" stroke-opacity=".4" stroke-linejoin="round"/>
+        <polygon id="vehicle-body" fill="#365d7b" fill-opacity=".85" stroke="#173650" vector-effect="non-scaling-stroke"/>
+        <polygon id="vehicle-front" fill="#b3d8ef"/>
+        <text id="vehicle-label" text-anchor="middle" dominant-baseline="central" fill="white"/>
+      </g>
+      <polyline id="draft" fill="none" stroke="#9b3340" stroke-width="3" vector-effect="non-scaling-stroke"/>
+      <line id="ruler" stroke="#237552" stroke-width="3" vector-effect="non-scaling-stroke"/>
+      <circle id="worker" fill="#145d9b" stroke="white" stroke-width="2" vector-effect="non-scaling-stroke"/>
+    </svg>
+    <div class="map-legend" aria-label="Map legend">
+      <span style="--swatch: #365d7b">Vehicle</span>
+      <span style="--swatch: #145d9b">Worker</span>
+      <span style="--swatch: #b52836">Blind zone</span>
+      <span style="--swatch: #eaa237">Vehicle clearance</span>
+      <span style="--swatch: #864618">Vehicle route</span>
+    </div>
+    <p id="status" role="status">Sample diagram loaded. Tap or drag on the map to move the worker.</p>
+    <div class="controls" aria-label="Playback">
+      <button id="play">Play</button>
+      <button id="pause" disabled>Pause</button>
+      <button id="reset-run" disabled>Reset run</button>
+      <output id="clock">0.0 s</output>
+    </div>
     <fieldset id="setup" aria-label="Scenario setup">
     <label for="upload">Upload a top-down diagram (PNG, JPEG, WebP)</label>
     <div class="controls"><input id="upload" type="file" accept="image/png,image/jpeg,image/webp"></div>
@@ -100,49 +139,10 @@
       <button id="clear-vehicle">Clear vehicle path</button>
     </div>
     </fieldset>
-    <div class="controls" aria-label="Playback">
-      <button id="play">Play</button>
-      <button id="pause" disabled>Pause</button>
-      <button id="reset-run" disabled>Reset run</button>
-      <output id="clock">0.0 s</output>
-    </div>
-    <p id="status" role="status">Sample diagram loaded. Tap or drag on the map to move the worker.</p>
-    <svg id="map" viewBox="0 0 800 500" tabindex="0" aria-label="Vehicle diagram. In Move worker mode, use the arrow keys to move the worker.">
-      <g id="sample">
-        <rect x="0" y="0" width="800" height="500" fill="#f7f9fb"/>
-      </g>
-      <image id="diagram" visibility="hidden"/>
-      <defs>
-        <pattern id="meter-grid" patternUnits="userSpaceOnUse">
-          <path id="grid-line" fill="none" stroke="#237552" stroke-opacity=".45" vector-effect="non-scaling-stroke"/>
-        </pattern>
-      </defs>
-      <rect id="grid" width="100%" height="100%" fill="url(#meter-grid)" display="none"/>
-      <polyline id="worker-route" fill="none" stroke="#145d9b" stroke-width="3" vector-effect="non-scaling-stroke"/>
-      <polyline id="vehicle-route" fill="none" stroke="#864618" stroke-width="3" stroke-dasharray="7 4" vector-effect="non-scaling-stroke"/>
-      <g id="vehicle-pose">
-        <g id="zones" fill="#ef7276" fill-opacity=".32" stroke="#b52836" stroke-width="2"/>
-        <polygon id="vehicle-clearance" fill="none" stroke="#eaa237" stroke-opacity=".4" stroke-linejoin="round"/>
-        <polygon id="vehicle-body" fill="#365d7b" fill-opacity=".85" stroke="#173650" vector-effect="non-scaling-stroke"/>
-        <polygon id="vehicle-front" fill="#b3d8ef"/>
-        <text id="vehicle-label" text-anchor="middle" dominant-baseline="central" fill="white"/>
-      </g>
-      <polyline id="draft" fill="none" stroke="#9b3340" stroke-width="3" vector-effect="non-scaling-stroke"/>
-      <line id="ruler" stroke="#237552" stroke-width="3" vector-effect="non-scaling-stroke"/>
-      <circle id="worker" fill="#145d9b" stroke="white" stroke-width="2" vector-effect="non-scaling-stroke"/>
-    </svg>
-    <div class="map-legend" aria-label="Map legend">
-      <span style="--swatch: #365d7b">Vehicle</span>
-      <span style="--swatch: #145d9b">Worker</span>
-      <span style="--swatch: #b52836">Blind zone</span>
-      <span style="--swatch: #eaa237">Vehicle clearance</span>
-      <span style="--swatch: #864618">Vehicle route</span>
-    </div>
   </section>
   <aside aria-label="Warnings and event history">
     <section><h2>Driver</h2><p id="driver" role="status">No active warning</p></section>
     <section><h2>Worker</h2><p id="walker" role="status">No active warning</p></section>
-    <section><h2>Map scale</h2><p id="ratio">Sample diagram · illustrative</p></section>
     <section><h2>Blind zones</h2><ol id="zone-list"></ol></section>
     <section><h2>Encounter log</h2><p id="empty">No crossings yet.</p><ol id="events"></ol></section>
   </aside>
