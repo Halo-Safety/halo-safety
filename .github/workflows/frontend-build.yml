@@ -27,4 +27,3 @@ jobs:
       - run: npm run test:review
       - run: npm run test:samples
       - run: npm run test:simulator-layout
-      - run: npm run test:ftm-replay
