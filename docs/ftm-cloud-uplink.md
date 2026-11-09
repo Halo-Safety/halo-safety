@@ -53,6 +53,46 @@ machine**. If this setting is absent, the gateway uploads **raw ranges only**
 and the browser does not invent a position. Even when the fit appears
 self-consistent it is **not a validated accuracy guarantee**.
 
+## Shared 2D map and antenna layout
+
+The **Hardware** tab now includes a live vehicle-relative 2D map. An
+organization `admin` or `manager` can select a vehicle, enter the
+**measured** coordinates of `HaloFront`, `HaloRearL`, and `HaloRearR`
+in **metres**, and save them to `public.ftm_anchor_layouts`. A `viewer`
+may view the layout, but cannot edit it. Layouts are persisted **per
+vehicle** (never per browser) and protected by organization RLS.
+
+Choose a physical reference point on the vehicle for (0,0).
+Positive X points right; positive Y points forward. The positions of all
+three antennas must be measured **from that same reference point**. The
+three anchors must form a non-collinear triangle; positions are never
+made up by the app. The map renders anchor dots even when there are no
+live samples. A worker estimate requires valid FTM distances to **all
+three** anchors.
+
+The site subtracts the optional per-anchor `bias` in metres and
+calculates a 2D position from the three corrected distances using the
+same linearized trilateration algorithm as the local Flask locator.
+The displayed residual measures the inconsistency of the three ranges;
+the ±range sensitivity uses an **assumed** error for a rough geometry
+test, **not** a measured confidence interval. Rough/unstable estimates
+are marked as such. Readings older than 30 seconds are explicitly
+marked stale. Nothing in this visualization is safety-certified.
+
+**No laptop geometry configuration is required for the cloud map.**
+The gateway continues uploading raw ranges, and the React map derives
+the position from the Supabase-stored layout. The optional
+`HALO_FTM_ANCHORS_JSON` environment variable still controls **local
+Python-generated** coordinates only; it does not synchronize the local
+Flask page's coordinates with the saved cloud layout.
+
+The layout schema is installed using
+`supabase/migrations/20261109_ftm_anchor_layouts.sql`. Its permissions
+are `SELECT` for organization members and `INSERT/UPDATE` for admins
+and managers. No browser writes to raw FTM measurement tables.
+Changing a vehicle layout only changes how stored ranges are
+visualized; it never modifies recorded samples or creates incident cases.
+
 ## API and data isolation
 
 - The local sender posts JSON measurements to
