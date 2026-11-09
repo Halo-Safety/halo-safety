@@ -103,7 +103,7 @@ export default function TelemetryPage() {
     <div className="hardware-stat-grid">
       <div><span>Reporting gateways</span><strong>{current}</strong><small>Last message within 30 s</small></div>
       <div><span>Recent gateway sources</span><strong>{latest.length}</strong><small>Latest 150 records queried</small></div>
-      <div><span>Measurements loaded</span><strong>{samples.length}</strong><small>Live FTM sample history</small></div>
+      <div><span>Measurements loaded</span><strong>{samples.length}</strong><small>FTM measurement history</small></div>
     </div>
     
     <div className="hardware-section-title"><h2>Gateway measurements</h2><span>{lastSync ? 'Last checked ' + lastSync.toLocaleTimeString() : 'Connecting…'}</span></div>
@@ -138,7 +138,7 @@ export default function TelemetryPage() {
       <FtmAnchorMap vehicles={vehicles} samples={samples} now={now}/>
     </details>
     <section className="hardware-history">
-      <div className="hardware-section-title"><h2>Recent ranging samples</h2><span>Last {Math.min(25, samples.length)} of {samples.length} loaded</span></div>
+      <div className="hardware-section-title"><h2>Recent ranging readings</h2><span>Last {Math.min(25, samples.length)} of {samples.length} loaded</span></div>
       <div className="hardware-table-wrap"><table><thead><tr><th>Time received</th><th>Vehicle</th><th>Worker</th><th>Front</th><th>Rear left</th><th>Rear right</th><th>Quality</th><th>Gateway</th></tr></thead><tbody>
         {samples.slice(0, 25).map(item => <tr key={item.id}>
           <td>{new Date(item.received_at).toLocaleTimeString()}</td>
