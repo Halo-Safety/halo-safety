@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { getEvents } from './api';
 import { eventType, type SensorEvent } from './types';
+import { sampleSensorEvents } from './sampleSensorEvents';
 import SafetyModule from './SafetyModule';
 import TelemetryPage from './TelemetryPage';
 import DemoBusinessOverview from './DemoBusinessOverview';
@@ -176,13 +177,17 @@ export default function App({ onExit, userEmail }: AppProps) {
   const ordered = useMemo(() => sortedEvents(events), [events]);
   const [historyFilter, setHistoryFilter] = useState<'all' | 'alerts' | 'cleared'>('all');
   const [historySearch, setHistorySearch] = useState('');
-  const filteredHistory = useMemo(() => ordered.filter(item => {
+  const matchesHistory = useCallback((item: SensorEvent) => {
     const type = eventType(item);
     if (historyFilter === 'alerts' && type !== 'PROXIMITY_ALERT') return false;
     if (historyFilter === 'cleared' && type !== 'ALERT_CLEAR') return false;
     const q = historySearch.trim().toLowerCase();
     return !q || [item.worker_id, item.machine_id, type, item.zone || ''].some(value => value.toLowerCase().includes(q));
-  }), [ordered, historyFilter, historySearch]);
+  }, [historyFilter, historySearch]);
+  const filteredHistory = useMemo(() => ordered.filter(matchesHistory), [ordered, matchesHistory]);
+  const sampleHistory = useMemo(() => isTestAccount ? sortedEvents(sampleSensorEvents) : [], [isTestAccount]);
+  const filteredSampleHistory = useMemo(() => sampleHistory.filter(matchesHistory), [sampleHistory, matchesHistory]);
+  const sampleActive = useMemo(() => isTestAccount ? getActiveEvents(sampleSensorEvents) : [], [isTestAccount]);
   const active = useMemo(() => getActiveEvents(events), [events]);
   const chart = useMemo(() => recentChart(events), [events]);
   const totalAlerts = events.filter((event) => eventType(event) === 'PROXIMITY_ALERT').length;
@@ -360,23 +365,37 @@ export default function App({ onExit, userEmail }: AppProps) {
             <div className="page-heading">
               <div><div className="panel-kicker">MONITORING / ACTION REQUIRED</div><h1 className="display-heading">Active alerts</h1>
                 <p>Uncleared worker–machine proximity warnings from live sensor events. Simulated warnings stay separate.</p></div>
-              <span className={'status-counter ' + (active.length ? 'warning' : '')}>{active.length} active</span>
+              <span className={'status-counter ' + (active.length ? 'warning' : '')}>{active.length} live</span>
             </div>
 
             {error && <div className="error-banner" role="alert"><AlertTriangle size={18}/><span>Unable to load alerts: {error}</span></div>}
             <section className="panel monitoring-alerts">
               <div className="panel-header"><div><div className="panel-kicker">LIVE WARNINGS</div><h2>Current alerts</h2></div>
                 <span className="subtle-tag">{apiOnline ? 'Cloud connected · 3 s refresh' : 'Cloud unavailable'}</span></div>
-              {active.length === 0 ? <div className="empty-alerts"><div className="empty-icon"><CheckCircle2 size={28}/></div>
-                <strong>{apiOnline ? 'No recorded active warnings' : 'Live alert status unavailable'}</strong>
-                <p>{apiOnline ? 'No active alerts in the event feed.' : 'Could not load the event feed.'}</p>
-              </div> : <div className="active-list">
+              {active.length > 0 && <div className="active-list">
                 {active.map((item, index) => <div className="active-item" key={String(item.id ?? index)}>
                   <div className="active-icon"><AlertTriangle size={19}/></div>
                   <div><strong>{item.worker_id} near {item.machine_id}</strong>
                     <small>Triggered {formatTime(item.timestamp)}{item.zone ? ' · ' + item.zone : ''}</small></div>
                   <EventBadge type={eventType(item)}/>
                 </div>)}
+              </div>}
+              {active.length === 0 && <div className={isTestAccount ? 'sample-live-empty' : 'empty-alerts'}>
+                {!isTestAccount && <div className="empty-icon"><CheckCircle2 size={28}/></div>}
+                <span>{apiOnline ? 'No live alerts recorded.' : 'Live event feed unavailable.'}</span>
+              </div>}
+              {isTestAccount && <div className="sample-feed">
+                <div className="sample-feed-heading">
+                  <strong>Example alerts</strong><span>3 fictional examples · not live sensor data</span>
+                </div>
+                <div className="active-list">
+                  {sampleActive.map((item, index) => <div className="active-item sample-active-item" key={'sample-' + String(item.id ?? index)}>
+                    <div className="active-icon"><AlertTriangle size={19}/></div>
+                    <div><strong>{item.worker_id} near {item.machine_id}</strong>
+                      <small>{formatTime(item.timestamp)}{item.zone ? ' · ' + item.zone : ''}</small></div>
+                    <span className="sample-inline-label">Sample</span>
+                  </div>)}
+                </div>
               </div>}
             </section>
             {isTestAccount && <section className="panel monitoring-sandbox">
@@ -394,12 +413,12 @@ export default function App({ onExit, userEmail }: AppProps) {
             <div className="page-heading">
               <div><div className="panel-kicker">MONITORING / AUDIT TRAIL</div><h1 className="display-heading">Event history</h1>
                 <p>Chronological record of live sensor events, separate from simulated scenarios and reviewed safety cases.</p></div>
-              <span className="subtle-tag">{events.length} records loaded</span>
+              <span className="subtle-tag">{isTestAccount ? events.length + ' live · ' + sampleHistory.length + ' sample' : events.length + ' records loaded'}</span>
             </div>
             {error && <div className="error-banner" role="alert"><AlertTriangle size={18}/><span>Unable to load history: {error}</span></div>}
             <section className="panel history-panel">
               <div className="panel-header"><div><div className="panel-kicker">LIVE EVENT LOG</div><h2>Sensor event history</h2></div>
-                <span className="subtle-tag">{filteredHistory.length} matching</span></div>
+                <span className="subtle-tag">{filteredHistory.length + filteredSampleHistory.length} matching{isTestAccount ? ' · sample entries labeled' : ''}</span></div>
               <div className="history-toolbar">
                 <label>Filter
                   <select value={historyFilter} onChange={event => setHistoryFilter(event.target.value as 'all' | 'alerts' | 'cleared')}>
@@ -412,17 +431,27 @@ export default function App({ onExit, userEmail }: AppProps) {
               </div>
               <div className="table-scroller"><table>
                 <thead><tr><th>Event</th><th>Worker</th><th>Machine</th><th>RSSI</th><th>Timestamp</th></tr></thead>
-                <tbody>{filteredHistory.map((item,index) => <tr key={String(item.id ?? index) + ':' + String(item.timestamp ?? '')}>
-                  <td><EventBadge type={eventType(item)}/></td>
-                  <td className="strong-cell">{item.worker_id}</td>
-                  <td>{item.machine_id}</td>
-                  <td className="mono-cell">{typeof item.rssi === 'number' ? item.rssi + ' dBm' : '—'}</td>
-                  <td className="date-cell">{formatTime(item.timestamp)}</td>
-                </tr>)}</tbody>
+                <tbody>
+                  {filteredHistory.map((item,index) => <tr key={'live-' + String(item.id ?? index) + ':' + String(item.timestamp ?? '')}>
+                    <td><EventBadge type={eventType(item)}/></td>
+                    <td className="strong-cell">{item.worker_id}</td>
+                    <td>{item.machine_id}</td>
+                    <td className="mono-cell">{typeof item.rssi === 'number' ? item.rssi + ' dBm' : '—'}</td>
+                    <td className="date-cell">{formatTime(item.timestamp)}</td>
+                  </tr>)}
+                  {filteredSampleHistory.length > 0 && <tr className="sample-history-heading"><td colSpan={5}>Example events · fictional sample data</td></tr>}
+                  {filteredSampleHistory.map((item,index) => <tr className="sample-history-row" key={'sample-' + String(item.id ?? index)}>
+                    <td><div className="sample-event-type"><EventBadge type={eventType(item)}/><span className="sample-inline-label">Sample</span></div></td>
+                    <td className="strong-cell">{item.worker_id}</td>
+                    <td>{item.machine_id}</td>
+                    <td className="mono-cell">{typeof item.rssi === 'number' ? item.rssi + ' dBm' : '—'}</td>
+                    <td className="date-cell">{formatTime(item.timestamp)}</td>
+                  </tr>)}
+                </tbody>
               </table>
-                {filteredHistory.length === 0 && <div className="empty-table">{events.length === 0 ? 'No live sensor events recorded yet.' : 'No events match the current filters.'}</div>}
+                {filteredHistory.length + filteredSampleHistory.length === 0 && <div className="empty-table">No events match the current filters.</div>}
               </div>
-              <div className="panel-foot">These are raw triggers, not verified near misses. Up to 500 recent records are loaded.</div>
+              <div className="panel-foot">Live events come from Supabase. Sample rows are illustrative and never stored as incidents.</div>
             </section>
             {isTestAccount && simulationEvents.length > 0 && <section className="panel monitoring-sandbox">
               <div className="panel-header"><div><div className="panel-kicker">SANDBOX / NOT REAL SENSOR DATA</div><h2>Simulation session history</h2></div>
