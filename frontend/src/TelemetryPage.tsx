@@ -38,7 +38,7 @@ const qualityLabel = (value: Sample['quality']) => ({
   rough_estimate: 'Rough estimate', self_consistent: 'Self-consistent estimate',
 })[value];
 
-export default function TelemetryPage() {
+export default function TelemetryPage({ isDemoAccount = false }: { isDemoAccount?: boolean }) {
   const [samples, setSamples] = useState<Sample[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -135,7 +135,7 @@ export default function TelemetryPage() {
     </div>
     <details className="hardware-positioning">
       <summary><span><strong>Experimental 2D positioning</strong><small>Optional: anchor geometry and worker estimates (not safety-certified)</small></span></summary>
-      <FtmAnchorMap vehicles={vehicles} samples={samples} now={now}/>
+      <FtmAnchorMap vehicles={vehicles} samples={samples} now={now} enableDemoReplay={isDemoAccount}/>
     </details>
     <section className="hardware-history">
       <div className="hardware-section-title"><h2>Recent ranging samples</h2><span>Last {Math.min(25, samples.length)} of {samples.length} loaded</span></div>
