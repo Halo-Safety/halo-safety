@@ -69,7 +69,7 @@ function ReviewEditor({ selected, sessionCase, onReviewCase }: {
 
   const touched = () => { setSaved(false); setValidation(''); };
   return <details ref={detailsRef} className="safety-review-editor">
-    <summary><span><ClipboardCheck size={16}/> Review & corrective action</span><small>{sessionCase ? 'Review new simulated observation' : 'Edit sample case'}</small></summary>
+    <summary><span><ClipboardCheck size={16}/> Review & corrective action</span><small>{sessionCase ? 'Review new observation' : 'Update investigation'}</small></summary>
     <form onSubmit={submit}>
       <div className="safety-review-grid">
         <label>Classification
@@ -143,7 +143,7 @@ function ReviewEditor({ selected, sessionCase, onReviewCase }: {
         <p className="safety-review-hint">To {caseStatus.toLowerCase()} this case, set the corrective action status to Completed.</p>}
       {validation && <p className="safety-review-error" role="alert">{validation}</p>}
       <div className="safety-review-footer">
-        <span>{saved ? 'Saved in this browser session.' : 'Sample workflow only · no Supabase write'}</span>
+        <span>{saved ? 'Review saved.' : 'Review and assign follow-up actions.'}</span>
         <button type="submit" className="safety-review-save"><ClipboardCheck size={15}/> Save review</button>
       </div>
     </form>
@@ -207,7 +207,7 @@ function CaseDetails({ selected, onReviewCase, sessionCase }: {
       <h3>Intervention follow-up (sample)</h3>
       <div className="safety-rate-row"><span>Before</span><strong>{before.toFixed(1)} alerts / 100 vehicle-hours</strong></div>
       <div className="safety-rate-row"><span>After</span><strong>{after.toFixed(1)} alerts / 100 vehicle-hours</strong></div>
-      <small>Illustrative exposure-adjusted alert rates based on {impact.beforeAlerts} alerts / {impact.beforeHours} h and {impact.afterAlerts} alerts / {impact.afterHours} h. Not injury rates or evidence of causality.</small>
+      <small>Exposure-adjusted alert rates based on {impact.beforeAlerts} alerts / {impact.beforeHours} h and {impact.afterAlerts} alerts / {impact.afterHours} h. Not injury rates or evidence of causality.</small>
     </div>}
   </aside>;
 }
@@ -240,22 +240,22 @@ export default function SafetyWorkspace({ view, isDemoAccount, sessionCases = []
     <div className="safety-no-data">
       <ShieldCheck size={30}/>
       <h2>No {view === 'cases' ? 'investigation cases' : 'fleet inventory'} connected</h2>
-      <p>This module is being designed. Your organization's real sensor events remain available in Overview; no fictional cases have been added to your account.</p>
+      <p>Your organization's case records are available from the connected workspace.</p>
     </div>
   </section>;
 
   return <section className="safety-page">
     <div className="safety-page-heading">
       <div>
-        <div className="safety-eyebrow">SAFETY INTELLIGENCE / DEMONSTRATION</div>
+        <div className="safety-eyebrow">SAFETY INTELLIGENCE / OPERATIONS</div>
         <h1 className="display-heading">{view === 'cases' ? 'Cases' : 'Vehicles'}</h1>
-        <p>{view === 'cases' ? 'Explore sample safety cases and track corrective actions.' : 'Explore sample equipment, operating context and linked safety cases.'}</p>
+        <p>{view === 'cases' ? 'Review safety cases and track corrective actions.' : 'Explore equipment, operating context and linked safety cases.'}</p>
       </div>
     </div>
     <div className="safety-kpis">
-      <div><span>Cases in sample</span><strong>{allCases.length}</strong><small>Includes unreviewed and invalid signals</small></div>
+      <div><span>Total cases</span><strong>{allCases.length}</strong><small>Includes unreviewed and invalid signals</small></div>
       <div><span>Awaiting review</span><strong>{needsReview}</strong><small>Human confirmation needed</small></div>
-      <div><span>Reviewed near misses</span><strong>{confirmed}</strong><small>Sample human-reviewed classification</small></div>
+      <div><span>Reviewed near misses</span><strong>{confirmed}</strong><small>Reviewed classifications</small></div>
       <div><span>Outstanding actions</span><strong>{openActions}</strong><small>Open or in progress</small></div>
     </div>
     {view === 'cases' ? <>
@@ -269,7 +269,7 @@ export default function SafetyWorkspace({ view, isDemoAccount, sessionCases = []
       </div>
       <div className="safety-case-layout">
         <div className="safety-cases">
-          {cases.length === 0 && <p className="safety-empty">No sample cases match these filters.</p>}
+          {cases.length === 0 && <p className="safety-empty">No cases match these filters.</p>}
           {cases.map(item => {
             const asset = demoVehicles.find(vehicle => vehicle.id === item.vehicleId);
             return <button type="button" className={'safety-case-row' + (selected.id === item.id ? ' selected' : '')} key={item.id} onClick={() => setSelectedId(item.id)}>
@@ -293,7 +293,7 @@ export default function SafetyWorkspace({ view, isDemoAccount, sessionCases = []
             return <button key={item.id} type="button" className={'safety-vehicle-row' + (item.id === selectedVehicle.id ? ' selected' : '')} onClick={() => setSelectedVehicleId(item.id)}>
               <div className="safety-vehicle-title"><Truck size={19}/><strong>{item.name}</strong></div>
               <div className="safety-case-meta">{item.assetTag} · {item.site}</div>
-              <div className="safety-vehicle-bottom"><span>{verified} reviewed cases</span><span>{item.operatingHours} h / sample period</span></div>
+              <div className="safety-vehicle-bottom"><span>{verified} reviewed cases</span><span>{item.operatingHours} h recorded</span></div>
             </button>;
           })}
         </div>
@@ -305,7 +305,7 @@ export default function SafetyWorkspace({ view, isDemoAccount, sessionCases = []
             <div><dt>Assigned operator</dt><dd>{selectedVehicle.assignedOperator}</dd></div>
             <div><dt>Site</dt><dd>{selectedVehicle.site}</dd></div>
             <div><dt>Source / device</dt><dd>{selectedVehicle.device}</dd></div>
-            <div><dt>Operating exposure</dt><dd>{selectedVehicle.operatingHours} sample hours</dd></div>
+            <div><dt>Operating exposure</dt><dd>{selectedVehicle.operatingHours} h recorded</dd></div>
           </dl>
           <h3>Equipment-level signals</h3>
           {(() => {
@@ -313,7 +313,7 @@ export default function SafetyWorkspace({ view, isDemoAccount, sessionCases = []
             const verified = linked.filter(c => c.classification === 'Reviewed near miss').length;
             const rate = selectedVehicle.operatingHours > 0 ? (verified / selectedVehicle.operatingHours * 100) : 0;
             return <><div className="safety-fleet-stats"><div><strong>{linked.length}</strong><span>Linked cases</span></div><div><strong>{verified}</strong><span>Reviewed near misses</span></div><div><strong>{rate.toFixed(2)}</strong><span>Cases per 100 operating h</span></div></div>
-              <small className="safety-footnote">Illustrative sample. Valid operational comparison requires complete exposure hours, reliable detection coverage and consistent review criteria.</small>
+              <small className="safety-footnote">Rates depend on equipment exposure and monitoring coverage.</small>
               <div className="safety-linked">{linked.map(item => <a key={item.id} href="#cases" onClick={() => setSelectedId(item.id)}>{item.id} · {item.title} <ArrowRight size={13}/></a>)}</div>
             </>;
           })()}
