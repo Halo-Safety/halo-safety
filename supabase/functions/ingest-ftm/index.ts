@@ -42,7 +42,7 @@ Deno.serve(async req => {
 
   const digest = await sha256(token);
   const { data: gateway, error: gatewayError } = await db.from("ftm_gateways")
-    .select("id,organization_id,vehicle_id,worker_ref,enabled")
+    .select("id,organization_id,vehicle_id,worker_ref,enabled,is_demo")
     .eq("token_sha256", digest).maybeSingle();
   if (gatewayError) return json({ error: "Gateway lookup unavailable" }, 503);
   if (!gateway || gateway.enabled !== true) return json({ error: "Unauthorized gateway" }, 401);
@@ -110,7 +110,7 @@ Deno.serve(async req => {
     measured_at: measuredAt.toISOString(),
     front_m: front, rear_left_m: left, rear_right_m: right,
     x_m: x, y_m: y, residual_m: residual, spread_m: spread,
-    quality, is_demo: false,
+    quality, is_demo: gateway.is_demo === true,
   });
   if (error) {
     if (error.code === "23505") return json({ ok: true, duplicate: true });
