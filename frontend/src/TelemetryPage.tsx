@@ -92,21 +92,18 @@ export default function TelemetryPage() {
       <div>
         <div className="hardware-kicker">SENSOR INTEGRATIONS / WI-FI FTM</div>
         <h1 className="display-heading">Telemetry</h1>
-        <p>Live Wi-Fi FTM range estimates uploaded by local ESP32 gateways.</p>
+        <p>Live Wi-Fi FTM range estimates uploaded by local ESP32 gateways. Experimental measurements, not verified worker positioning; an active uplink is not a safety guarantee.</p>
       </div>
       <button type="button" className="hardware-refresh" onClick={() => {
         setLoading(true);
         void refresh().catch(e => setError(e instanceof Error ? e.message : 'Refresh failed')).finally(() => setLoading(false));
       }} disabled={loading}><RefreshCw size={15}/> Refresh</button>
     </div>
-    <div className="hardware-notice"><ShieldCheck size={18} />
-      <span><strong>Experimental ranging, not safety-certified positioning.</strong> Measurement freshness indicates an uplink, not a verified safe working area. Browser data is scoped by your Supabase organization membership. No readings automatically generate near-miss cases.</span>
-    </div>
     {error && <div className="hardware-error" role="alert">{error}</div>}
     <div className="hardware-stat-grid">
       <div><span>Reporting gateways</span><strong>{current}</strong><small>Last message within 30 s</small></div>
       <div><span>Recent gateway sources</span><strong>{latest.length}</strong><small>Latest 150 records queried</small></div>
-      <div><span>Measurements loaded</span><strong>{samples.length}</strong><small>Live FTM sample history</small></div>
+      <div><span>Measurements loaded</span><strong>{samples.length}</strong><small>FTM measurement history</small></div>
     </div>
     
     <div className="hardware-section-title"><h2>Gateway measurements</h2><span>{lastSync ? 'Last checked ' + lastSync.toLocaleTimeString() : 'Connecting…'}</span></div>
@@ -124,7 +121,7 @@ export default function TelemetryPage() {
             <span className={'hardware-state ' + (fresh ? 'fresh' : 'stale')}>
               <span className="hardware-dot"/>{fresh ? 'Reporting' : 'Stale / unknown'}</span>
           </div>
-          <div className="hardware-context"><HardHat size={15}/>{sample.worker_ref} · {vehicle?.site || 'Site not specified'} · {sample.is_demo ? 'TEST DATA' : 'DEVICE DATA'}</div>
+          <div className="hardware-context"><HardHat size={15}/>{sample.worker_ref} · {vehicle?.site || 'Site not specified'}</div>
           <div className="hardware-ranges">
             <div><span>Front anchor</span><strong>{distance(sample.front_m)}</strong></div>
             <div><span>Rear left</span><strong>{distance(sample.rear_left_m)}</strong></div>
@@ -141,13 +138,13 @@ export default function TelemetryPage() {
       <FtmAnchorMap vehicles={vehicles} samples={samples} now={now}/>
     </details>
     <section className="hardware-history">
-      <div className="hardware-section-title"><h2>Recent ranging samples</h2><span>Last {Math.min(25, samples.length)} of {samples.length} loaded</span></div>
-      <div className="hardware-table-wrap"><table><thead><tr><th>Time received</th><th>Vehicle</th><th>Worker</th><th>Front</th><th>Rear left</th><th>Rear right</th><th>Quality</th><th>Source</th></tr></thead><tbody>
+      <div className="hardware-section-title"><h2>Recent ranging readings</h2><span>Last {Math.min(25, samples.length)} of {samples.length} loaded</span></div>
+      <div className="hardware-table-wrap"><table><thead><tr><th>Time received</th><th>Vehicle</th><th>Worker</th><th>Front</th><th>Rear left</th><th>Rear right</th><th>Quality</th><th>Gateway</th></tr></thead><tbody>
         {samples.slice(0, 25).map(item => <tr key={item.id}>
           <td>{new Date(item.received_at).toLocaleTimeString()}</td>
           <td>{vehiclesById.get(item.vehicle_id)?.name || item.vehicle_id.slice(0,8)}</td>
           <td>{item.worker_ref}</td><td>{distance(item.front_m)}</td><td>{distance(item.rear_left_m)}</td><td>{distance(item.rear_right_m)}</td><td>{qualityLabel(item.quality)}</td>
-          <td>{item.is_demo ? 'Test' : 'Device'}</td>
+          <td>{item.gateway_id.slice(0, 8)}</td>
         </tr>)}
       </tbody></table></div>
     </section>

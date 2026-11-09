@@ -10,3 +10,30 @@
 .business-case-item,.business-action-item{padding:10px 9px}
 .business-fleet{margin-bottom:12px}
 .business-next{padding:12px 15px;margin-bottom:12px}
+
+/* Unified overview uses the same business layout with either sample or organization cases. */
+.business-overview-heading{margin-bottom:14px}
+.business-overview-heading>div{min-width:0}
+.business-overview-heading p{max-width:860px}
+.business-inline-error{color:#a96e52!important;font-size:11px!important;margin-top:6px!important}
+.business-empty{font-size:11px;color:#8da3b0;line-height:1.5;padding:13px 9px}
+.business-live{margin:0 0 13px}
+.business-source-status{display:inline-flex;align-items:center;gap:6px;border:1px solid #ecdbd1;background:#fff8f3;border-radius:50px;padding:6px 9px;font-size:10px;color:#9c7f70}
+.business-source-status.online{border-color:#d2eadb;background:#f1faf5;color:#508b76}
+.business-live-description{margin:0 18px 12px;color:#8da4b0;font-size:10px;line-height:1.55}
+.business-live-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(250px,1.1fr);gap:17px;padding:0 18px 17px}
+.business-live-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.business-live-stats>a{display:grid;grid-template-columns:20px 1fr auto;align-items:center;gap:7px;padding:12px 11px;background:#f6fafc;border:1px solid #e3edf2;border-radius:9px;min-width:0}
+.business-live-stats svg{color:#6e99ac}
+.business-live-stats span{font-size:10px;color:#748f9f}
+.business-live-stats strong{font-size:19px;color:#406f89}
+.business-live-stats>a:hover{background:#edf7f9}
+.business-live-chart{padding:11px 13px;border:1px solid #e3edf2;border-radius:9px;min-width:0}
+.business-live-bars{display:flex;gap:10px;align-items:flex-end;min-height:95px;margin-top:9px}
+.business-live-column{display:flex;flex:1;min-width:0;align-items:center;flex-direction:column;gap:3px;color:#7591a3;font-size:9px}
+.business-live-column>span{height:12px}
+.business-live-column small{font-size:9px}
+.business-live-track{height:60px;background:#edf4f8;border-radius:4px;width:min(100%,28px);display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden}
+.business-live-track>div{background:#5d9ab4;border-radius:4px 4px 0 0;min-height:0}
+@media(max-width:930px){.business-live-layout{grid-template-columns:1fr}}
+@media(max-width:580px){.business-live-layout{padding:0 11px 12px}.business-live-stats>a{padding:10px 8px;grid-template-columns:15px 1fr auto}.business-live-stats strong{font-size:16px}.business-live-stats span{font-size:9px}}

@@ -6,7 +6,7 @@ const status = get('status');
 let width = 800;
 let height = 500;
 let mode = 'move';
-let vehicle = { x: 400, y: 165, heading: 0, name: 'Demo loader', length: 8.5, width: 6 };
+let vehicle = { x: 400, y: 165, heading: 0, name: 'Wheel loader', length: 8.5, width: 6 };
 let zones = [{ name: 'Rear blind zone', points: [
   { x: -55, y: 85 }, { x: 55, y: 85 }, { x: 135, y: 250 }, { x: -135, y: 250 },
 ] }];
@@ -612,8 +612,6 @@ map.onpointerdown = event => {
     get('meter-grid').setAttribute('height', spacing);
     get('grid-line').setAttribute('d', 'M ' + spacing + ' 0 H 0 V ' + spacing);
     get('grid').removeAttribute('display');
-    get('ratio').textContent = (width / pixelsPerMetre).toFixed(2) + ' × '
-      + (height / pixelsPerMetre).toFixed(2) + ' m diagram · ' + gridMetres + ' m grid squares';
     for (const [key, value] of Object.entries({ x1: scaleStart.x, y1: scaleStart.y, x2: point.x, y2: point.y })) {
       get('ruler').setAttribute(key, value);
     }
@@ -669,7 +667,6 @@ get('upload').onchange = event => {
       get('sample').hidden = true;
       get('sample').setAttribute('display', 'none');
       for (const key of ['x1', 'y1', 'x2', 'y2']) get('ruler').removeAttribute(key);
-      get('ratio').textContent = 'Scale not set';
       pixelsPerMetre = undefined;
       get('grid').setAttribute('display', 'none');
       zones = [];

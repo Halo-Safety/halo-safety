@@ -22,6 +22,7 @@
   aside li{font-size:11px;line-height:1.5;color:#748b9b;margin:7px 0}
   .controls{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:12px 0}
   fieldset{border:0;padding:0;margin:0;min-width:0}
+  #setup{margin-top:18px;padding-top:14px;border-top:1px solid #e5edf2}
   #setup>.controls{padding-bottom:11px;border-bottom:1px solid #edf2f6}
   #setup>.controls:last-child{border-bottom:0}
   label{font-size:11px;color:#6b8495}
@@ -41,7 +42,7 @@
   .map-legend span::before{content:"";display:inline-block;width:.8em;height:.8em;margin-right:.5em;border-radius:2px;background:var(--swatch)}
   #map[data-reference="true"] #vehicle-body{fill-opacity:.20}
   #map[data-reference="true"] #vehicle-label{fill:#173650}
-  #status{min-height:2.7em;color:#648298;font-size:11px;line-height:1.6}
+  #status{color:#648298;font-size:11px;line-height:1.6;margin:10px 0 6px}
   .warning{color:#c66f58!important;font-weight:800}
   ol{padding-left:18px;overflow-wrap:anywhere}
   #clock{font-size:12px;font-weight:750;color:#407f9e;min-width:48px}
@@ -60,53 +61,6 @@
 </header>
 <main>
   <section aria-label="Simulator controls and map">
-    <fieldset id="setup" aria-label="Scenario setup">
-    <label for="upload">Upload a top-down diagram (PNG, JPEG, WebP)</label>
-    <div class="controls"><input id="upload" type="file" accept="image/png,image/jpeg,image/webp"></div>
-    <div class="controls">
-      <label for="meters">Reference length (m)</label>
-      <input id="meters" type="number" min="0.01" step="any" value="5">
-      <button id="scale">Set scale</button>
-      <button id="trace">Add blind zone</button>
-      <button id="finish" disabled>Finish zone</button>
-      <button id="move" aria-pressed="true">Move worker</button>
-    </div>
-    <div class="controls">
-      <label for="vehicle-name">Vehicle</label>
-      <input id="vehicle-name" value="Demo loader" maxlength="48">
-      <button id="shape">Trace vehicle shape</button>
-      <label for="vehicle-length">Length (m)</label>
-      <input id="vehicle-length" type="number" min="0.01" step="any" value="8.5">
-      <label for="vehicle-width">Width (m)</label>
-      <input id="vehicle-width" type="number" min="0.01" step="any" value="6">
-      <button id="identify">Mark front and rear</button>
-      <button id="vehicle-move">Move vehicle</button>
-      <label for="clearance">Warning clearance (m)</label>
-      <input id="clearance" type="number" min="0" step="0.1" value="0.5">
-      <label for="heading">Heading <output id="heading-value">0°</output></label>
-      <input id="heading" type="range" min="0" max="359" value="0">
-      <label><input id="reference-visible" type="checkbox" disabled> Show reference image</label>
-    </div>
-    <div class="controls">
-      <button id="worker-path" class="worker-route">Plan worker path</button>
-      <label for="worker-speed">Worker speed (m/s)</label>
-      <input id="worker-speed" type="number" min="0" max="30" step="any" value="1.4">
-      <button id="clear-worker">Clear worker path</button>
-    </div>
-    <div class="controls">
-      <button id="vehicle-path" class="vehicle-route">Plan vehicle path</button>
-      <label for="vehicle-speed">Vehicle speed (m/s)</label>
-      <input id="vehicle-speed" type="number" min="0" max="30" step="any" value="2">
-      <button id="clear-vehicle">Clear vehicle path</button>
-    </div>
-    </fieldset>
-    <div class="controls" aria-label="Playback">
-      <button id="play">Play</button>
-      <button id="pause" disabled>Pause</button>
-      <button id="reset-run" disabled>Reset run</button>
-      <output id="clock">0.0 s</output>
-    </div>
-    <p id="status" role="status">Sample diagram loaded. Tap or drag on the map to move the worker.</p>
     <svg id="map" viewBox="0 0 800 500" tabindex="0" aria-label="Vehicle diagram. In Move worker mode, use the arrow keys to move the worker.">
       <g id="sample">
         <rect x="0" y="0" width="800" height="500" fill="#f7f9fb"/>
@@ -138,11 +92,57 @@
       <span style="--swatch: #eaa237">Vehicle clearance</span>
       <span style="--swatch: #864618">Vehicle route</span>
     </div>
+    <p id="status" role="status">Vehicle diagram loaded. Tap or drag on the map to move the worker.</p>
+    <div class="controls" aria-label="Playback">
+      <button id="play">Play</button>
+      <button id="pause" disabled>Pause</button>
+      <button id="reset-run" disabled>Reset run</button>
+      <output id="clock">0.0 s</output>
+    </div>
+    <fieldset id="setup" aria-label="Scenario setup">
+    <label for="upload">Upload a top-down diagram (PNG, JPEG, WebP)</label>
+    <div class="controls"><input id="upload" type="file" accept="image/png,image/jpeg,image/webp"></div>
+    <div class="controls">
+      <label for="meters">Reference length (m)</label>
+      <input id="meters" type="number" min="0.01" step="any" value="5">
+      <button id="scale">Set scale</button>
+      <button id="trace">Add blind zone</button>
+      <button id="finish" disabled>Finish zone</button>
+      <button id="move" aria-pressed="true">Move worker</button>
+    </div>
+    <div class="controls">
+      <label for="vehicle-name">Vehicle</label>
+      <input id="vehicle-name" value="Wheel loader" maxlength="48">
+      <button id="shape">Trace vehicle shape</button>
+      <label for="vehicle-length">Length (m)</label>
+      <input id="vehicle-length" type="number" min="0.01" step="any" value="8.5">
+      <label for="vehicle-width">Width (m)</label>
+      <input id="vehicle-width" type="number" min="0.01" step="any" value="6">
+      <button id="identify">Mark front and rear</button>
+      <button id="vehicle-move">Move vehicle</button>
+      <label for="clearance">Warning clearance (m)</label>
+      <input id="clearance" type="number" min="0" step="0.1" value="0.5">
+      <label for="heading">Heading <output id="heading-value">0°</output></label>
+      <input id="heading" type="range" min="0" max="359" value="0">
+      <label><input id="reference-visible" type="checkbox" disabled> Show reference image</label>
+    </div>
+    <div class="controls">
+      <button id="worker-path" class="worker-route">Plan worker path</button>
+      <label for="worker-speed">Worker speed (m/s)</label>
+      <input id="worker-speed" type="number" min="0" max="30" step="any" value="1.4">
+      <button id="clear-worker">Clear worker path</button>
+    </div>
+    <div class="controls">
+      <button id="vehicle-path" class="vehicle-route">Plan vehicle path</button>
+      <label for="vehicle-speed">Vehicle speed (m/s)</label>
+      <input id="vehicle-speed" type="number" min="0" max="30" step="any" value="2">
+      <button id="clear-vehicle">Clear vehicle path</button>
+    </div>
+    </fieldset>
   </section>
   <aside aria-label="Warnings and event history">
     <section><h2>Driver</h2><p id="driver" role="status">No active warning</p></section>
     <section><h2>Worker</h2><p id="walker" role="status">No active warning</p></section>
-    <section><h2>Map scale</h2><p id="ratio">Sample diagram · illustrative</p></section>
     <section><h2>Blind zones</h2><ol id="zone-list"></ol></section>
     <section><h2>Encounter log</h2><p id="empty">No crossings yet.</p><ol id="events"></ol></section>
   </aside>

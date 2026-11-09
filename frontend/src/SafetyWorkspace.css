@@ -85,3 +85,33 @@
 .safety-detail-header{padding-bottom:12px;margin-bottom:14px}
 .safety-detail h3{margin:15px 0 9px}
 .safety-filters{margin-bottom:12px}
+
+/* A compact, expandable review editor. Changes apply only to sample records. */
+.safety-review-editor{margin-top:17px;border:1px solid #d5e6ed;border-radius:11px;background:#f8fcfd;overflow:hidden}
+.safety-review-editor>summary{display:flex;align-items:center;justify-content:space-between;gap:9px;cursor:pointer;list-style:none;padding:13px 14px;font-size:12px;color:#356e88}
+.safety-review-editor>summary::-webkit-details-marker{display:none}
+.safety-review-editor>summary>span{display:flex;align-items:center;gap:7px;font-weight:700}
+.safety-review-editor>summary>small{font-size:10px;color:#8fa3af;font-weight:400}
+.safety-review-editor>summary::after{content:'+';font-size:17px;color:#527e92;font-weight:500}
+.safety-review-editor[open]>summary::after{content:'−'}
+.safety-review-editor>form{padding:13px 14px 14px;border-top:1px solid #e0ebf0}
+.safety-review-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:12px}
+.safety-review-grid>label{display:flex;flex-direction:column;gap:5px;color:#6d8999;font-size:11px;min-width:0}
+.safety-review-grid>.review-wide{grid-column:1/-1}
+.safety-review-grid input,.safety-review-grid select,.safety-review-grid textarea{background:#fff;border:1px solid #d3e3eb;border-radius:8px;color:#456c80;padding:9px 10px;font:inherit;font-size:11px;min-width:0;width:100%;outline:none}
+.safety-review-grid input:focus,.safety-review-grid textarea:focus,.safety-review-grid select:focus{border-color:#6aacc2;box-shadow:0 0 0 2px #70b5cb2e}
+.safety-review-grid textarea{resize:vertical;min-height:66px;line-height:1.5}
+.safety-review-action-toggle{display:flex;align-items:center;gap:8px;color:#477b93;font-size:11px;font-weight:600;margin:12px 0}
+.safety-review-action-toggle input{accent-color:#3c8ea7}
+.safety-review-error{color:#ad6048!important;font-size:11px!important;margin:8px 0!important}
+.safety-review-footer{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:11px;margin-top:13px}
+.safety-review-footer>span{color:#91a7b3;font-size:10px}
+.safety-review-save{display:inline-flex;align-items:center;gap:7px;background:#367d9d;color:#fff;border:0;border-radius:8px;padding:10px 12px;font-size:11px;font-weight:650;cursor:pointer}
+.safety-review-save:hover{background:#276e8b}
+.safety-reviewed-note{margin-top:13px;padding:11px 13px;border-left:3px solid #69a6ba;background:#f4f9fb;border-radius:0 8px 8px 0}
+.safety-reviewed-note>strong{color:#386f88;font-size:11px}
+.safety-reviewed-note p{margin:6px 0!important;color:#5b7b8d!important;white-space:pre-wrap;overflow-wrap:anywhere}
+.safety-reviewed-note small{font-size:10px;color:#91a5b1}
+@media(max-width:620px){.safety-review-grid{grid-template-columns:1fr}.safety-review-grid>label{grid-column:1/-1}.safety-review-editor>summary{flex-wrap:wrap}}
+
+.safety-review-hint{margin:3px 0 8px!important;color:#7d8f9a!important;font-size:10px!important;line-height:1.5}

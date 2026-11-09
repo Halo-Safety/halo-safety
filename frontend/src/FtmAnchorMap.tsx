@@ -136,15 +136,17 @@ export default function FtmAnchorMap({ vehicles, samples, now }: Props) {
   const plotEstimate = fresh && estimate?.quality === 'self_consistent'
     && estimate.spread_m <= 0.5 ? estimate : null;
   const trail = useMemo(() => {
-    if (!layout || !showTrail || !latest) return [];
+    if (!layout || !showTrail || !latest || !fresh) return [];
     const cutoff = new Date(latest.received_at).getTime() - 180_000;
     return gatewaySamples.filter(s => new Date(s.received_at).getTime() >= cutoff)
       .slice(0, 20).reverse().map(s => estimateFtm(layout, s))
-      .filter((position): position is NonNullable<typeof position> => position !== null);
-  }, [layout, showTrail, latest?.received_at, gatewaySamples.map(s => s.gateway_id + s.received_at).join('|')]);
+      .filter((position): position is NonNullable<typeof position> =>
+        position !== null && position.quality === 'self_consistent' && position.spread_m <= 0.5);
+  }, [layout, showTrail, fresh, latest?.received_at, gatewaySamples.map(s => s.gateway_id + s.received_at).join('|')]);
   const allPoints = anchors ? [
     ...anchors.map(a => ({ x: a.x, y: a.y })),
     ...(plotEstimate ? [{ x: plotEstimate.x, y: plotEstimate.y }] : []),
+    ...trail.map(position => ({ x: position.x, y: position.y })),
   ] : [];
   const projected = allPoints.length ? makeProjection(allPoints) : null;
 
@@ -261,7 +263,7 @@ export default function FtmAnchorMap({ vehicles, samples, now }: Props) {
           </span>
         </div>}
         {layout && !estimate && <p className="ftm-map-missing">No usable position: three valid ranges and a non-degenerate anchor layout are required.</p>}
-        {latest && <p className="ftm-map-caption">Measurement from {latest.worker_ref} · received {ago(latest.received_at, now)} · {latest.is_demo ? 'TEST DEVICE' : 'DEVICE DATA'}. A stale position is not live tracking.</p>}
+        {latest && <p className="ftm-map-caption">Measurement from {latest.worker_ref} · received {ago(latest.received_at, now)} · gateway {latest.gateway_id.slice(0, 8)}. A stale position is not live tracking.</p>}
         {!latest && <p className="ftm-map-caption">No FTM measurements for this vehicle yet. Anchors can be configured before the gateway is connected.</p>}
       </div>
       <form className="ftm-anchor-editor" onSubmit={event => void save(event)}>
@@ -290,7 +292,7 @@ export default function FtmAnchorMap({ vehicles, samples, now }: Props) {
             <Save size={15}/> {saving ? 'Saving…' : 'Save layout to Supabase'}
           </button>
         </div> : <p className="ftm-anchor-hint"><ShieldAlert size={15}/> Only organization admins and managers can change this configuration.</p>}
-        <div className="ftm-anchor-lab-note">Do not use these estimates to trigger physical safety interventions without validated hardware testing. Stored raw FTM samples are never modified by calibration changes.</div>
+        <div className="ftm-anchor-lab-note">Do not use these estimates to trigger physical safety interventions without validated hardware testing. Stored raw FTM readings are never modified by calibration changes.</div>
       </form>
     </div>
   </section>;
