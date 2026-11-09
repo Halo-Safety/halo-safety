@@ -39,6 +39,9 @@ export interface DemoCase {
   potentialSeverity: 'Critical' | 'High' | 'Medium' | 'Low';
   evidence: string[];
   assessment: string;
+  /** Human review note from this browser-only demonstration. */
+  reviewNote?: string;
+  reviewedAt?: string;
   recommendedAction: DemoAction | null;
   pattern: string;
   impact?: { beforeAlerts: number; beforeHours: number; afterAlerts: number; afterHours: number };
@@ -121,3 +124,40 @@ export const demoCases: DemoCase[] = [
     pattern: 'Repeat communication dropouts for this sample beacon',
   },
 ];
+/** Changes to fixed sample cases are stored as session overrides; no Supabase writes. */
+export type DemoReviewInput = {
+  classification: CaseClassification;
+  reviewNote: string;
+  recommendedAction: DemoAction | null;
+};
+
+export function reviewDemoCase(original: DemoCase, input: DemoReviewInput, timestamp: string): DemoCase {
+  const note = input.reviewNote.trim();
+  if (input.classification !== 'Candidate' && !note) {
+    throw new Error('Add a review note before classifying this observation.');
+  }
+  const action = input.recommendedAction;
+  if (action && (!action.title.trim() || !action.owner.trim() ||
+    !/^\\d{4}-\\d{2}-\\d{2}$/.test(action.due) ||
+    Number.isNaN(new Date(action.due + 'T12:00:00').getTime()))) {
+    throw new Error('Complete the action description, owner and valid due date.');
+  }
+  const status: CaseStatus = input.classification === 'False alarm' ? 'Dismissed'
+    : input.classification === 'Candidate' ? 'Needs review'
+    : action ? 'Action assigned' : 'Investigating';
+  return {
+    ...original,
+    classification: input.classification,
+    status,
+    reviewNote: note,
+    reviewedAt: input.classification === 'Candidate' ? undefined : timestamp,
+    recommendedAction: action ? {
+      ...action, title: action.title.trim(), owner: action.owner.trim(),
+    } : null,
+  };
+}
+
+export function mergeDemoCases(overrides: readonly DemoCase[], samples: readonly DemoCase[] = demoCases): DemoCase[] {
+  const updated = new Set(overrides.map(item => item.id));
+  return [...overrides, ...samples.filter(item => !updated.has(item.id))];
+}
