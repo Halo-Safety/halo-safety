@@ -113,3 +113,5 @@
 .safety-reviewed-note p{margin:6px 0!important;color:#5b7b8d!important;white-space:pre-wrap;overflow-wrap:anywhere}
 .safety-reviewed-note small{font-size:10px;color:#91a5b1}
 @media(max-width:620px){.safety-review-grid{grid-template-columns:1fr}.safety-review-grid>label{grid-column:1/-1}.safety-review-editor>summary{flex-wrap:wrap}}
+
+.safety-review-hint{margin:3px 0 8px!important;color:#7d8f9a!important;font-size:10px!important;line-height:1.5}
