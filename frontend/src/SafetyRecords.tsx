@@ -45,7 +45,7 @@ function Field({ label, children, wide = false }: {
   </label>;
 }
 
-export default function SafetyRecords({ view }: { view: View }) {
+export default function SafetyRecords({ view, preferredCaseId }: { view: View; preferredCaseId?: string }) {
   const [organizations, setOrganizations] = useState<SafetyOrg[]>([]);
   const loadGeneration = useRef(0);
   const [orgId, setOrgId] = useState('');
@@ -53,7 +53,8 @@ export default function SafetyRecords({ view }: { view: View }) {
   const [cases, setCases] = useState<SafetyCase[]>([]);
   const [actions, setActions] = useState<CorrectiveAction[]>([]);
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
-  const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
+  const [selectedCaseId, setSelectedCaseId] = useState<string | null>(preferredCaseId || null);
+  useEffect(() => { if (preferredCaseId) setSelectedCaseId(preferredCaseId); }, [preferredCaseId]);
   const [filter, setFilter] = useState<Filter>('all');
   const [formKind, setFormKind] = useState<FormKind>(null);
   const [editId, setEditId] = useState<string | null>(null);
