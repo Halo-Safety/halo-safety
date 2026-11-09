@@ -8,6 +8,7 @@ create table if not exists public.ftm_gateways (
   label text not null default 'FTM USB gateway',
   token_sha256 text not null unique check (token_sha256 ~ '^[0-9a-f]{64}$'),
   enabled boolean not null default true,
+  is_demo boolean not null default false,
   last_received_at timestamptz,
   created_at timestamptz not null default now(),
   unique (id, organization_id),
