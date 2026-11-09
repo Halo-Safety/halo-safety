@@ -6,7 +6,7 @@ const status = get('status');
 let width = 800;
 let height = 500;
 let mode = 'move';
-let vehicle = { x: 400, y: 165, heading: 0, name: 'Demo loader', length: 8.5, width: 6 };
+let vehicle = { x: 400, y: 165, heading: 0, name: 'Wheel loader', length: 8.5, width: 6 };
 let zones = [{ name: 'Rear blind zone', points: [
   { x: -55, y: 85 }, { x: 55, y: 85 }, { x: 135, y: 250 }, { x: -135, y: 250 },
 ] }];
