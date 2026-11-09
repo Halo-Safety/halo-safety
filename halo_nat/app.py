@@ -12,6 +12,7 @@ from database import (
 
 from serial_reader import start_serial_reader
 from worker_locator import locator, poll_ftm
+from cloud_gateway import run_cloud_gateway
 app = Flask(__name__)
 app.register_blueprint(locator)
 app.config["SECRET_KEY"] = os.getenv("HALO_SECRET_KEY", "halo_demo_key")
@@ -108,6 +109,8 @@ def main():
     ftm_port = os.getenv("HALO_FTM_PORT", "").strip()
     if ftm_port:
         Thread(target=poll_ftm, args=(ftm_port,), daemon=True).start()
+        if os.getenv("HALO_SUPABASE_URL") and os.getenv("HALO_GATEWAY_TOKEN"):
+            Thread(target=run_cloud_gateway, daemon=True).start()
     if serial_port and serial_port.casefold() != ftm_port.casefold():
         Thread(target=start_serial_reader, args=(socketio, serial_port), daemon=True).start()
     socketio.run(app, host="127.0.0.1", port=5000, debug=False)

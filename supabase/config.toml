@@ -1,0 +1,5 @@
+# Gateway authenticates with a dedicated high-entropy token verified in the
+# Edge Function. JWT verification at the platform layer is intentionally
+# disabled; the handler must reject every unauthenticated request.
+[functions.ingest-ftm]
+verify_jwt = false
