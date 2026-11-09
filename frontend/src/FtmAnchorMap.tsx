@@ -17,7 +17,7 @@ type Reading = {
   rear_right_m: number | null;
   is_demo: boolean;
 };
-type Props = { vehicles: Vehicle[]; samples: Reading[]; now: number };
+type Props = { vehicles: Vehicle[]; samples: Reading[]; now: number; enableDemoReplay: boolean };
 type NumericField = Exclude<keyof FtmLayout, 'vehicle_id' | 'organization_id' | 'updated_at'>;
 type Draft = Record<NumericField, string>;
 
@@ -75,12 +75,12 @@ function makeProjection(points: PlotPoint[]) {
   return { W, H, scale, step, toX, toY, xTicks, yTicks };
 }
 
-export default function FtmAnchorMap({ vehicles, samples, now }: Props) {
+export default function FtmAnchorMap({ vehicles, samples, now, enableDemoReplay }: Props) {
   const [selectedId, setSelectedId] = useState('');
   const [gatewayId, setGatewayId] = useState('');
   const [replayIndex, setReplayIndex] = useState(0);
   const [replayCycle, setReplayCycle] = useState(0);
-  const replayMode = gatewayId === DEMO_REPLAY_GATEWAY;
+  const replayMode = enableDemoReplay && gatewayId === DEMO_REPLAY_GATEWAY;
   const [layouts, setLayouts] = useState<FtmLayout[]>([]);
   const [memberships, setMemberships] = useState<SafetyOrg[]>([]);
   const [draft, setDraft] = useState<Draft>(emptyDraft);
@@ -205,7 +205,7 @@ export default function FtmAnchorMap({ vehicles, samples, now }: Props) {
           {vehicles.map(v => <option key={v.id} value={v.id}>{v.asset_tag} · {v.name}</option>)}
         </select>
       </label>
-      {selected && <label>Worker / gateway
+      {selected && (enableDemoReplay || vehicleSamples.length > 1) && <label>Worker / gateway
         <select value={replayMode ? DEMO_REPLAY_GATEWAY : latest?.gateway_id || ''} onChange={event => {
           setGatewayId(event.target.value);
           setReplayIndex(0);
@@ -213,7 +213,7 @@ export default function FtmAnchorMap({ vehicles, samples, now }: Props) {
         }}>
           {Array.from(new Map(vehicleSamples.map(s => [s.gateway_id, s])).values()).map(s =>
             <option key={s.gateway_id} value={s.gateway_id}>{s.worker_ref} · {s.gateway_id.slice(0, 8)}</option>)}
-          <option value={DEMO_REPLAY_GATEWAY}>Worker walk · demo replay</option>
+          {enableDemoReplay && <option value={DEMO_REPLAY_GATEWAY}>Worker walk · demo replay</option>}
         </select>
       </label>}
       {replayMode && <div className="ftm-replay-control">
