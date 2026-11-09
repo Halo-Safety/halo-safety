@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Activity, AlertTriangle, BarChart3, CheckCircle2,
-  Clock3, Database, HardHat, RefreshCw, Route, ShieldCheck, Wifi, WifiOff, LogOut, ClipboardCheck, Truck,
+  Clock3, Database, HardHat, RefreshCw, Route, ShieldCheck, Wifi, WifiOff, LogOut, ClipboardCheck, Truck, RadioTower,
 } from 'lucide-react';
 import { getEvents } from './api';
 import { eventType, type SensorEvent } from './types';
 import SafetyModule from './SafetyModule';
+import TelemetryPage from './TelemetryPage';
 
 const POLL_INTERVAL_MS = 3000;
 
@@ -97,6 +98,7 @@ export default function App({ onExit, userEmail }: AppProps) {
   const simulationView = view === 'simulation';
   const caseView = view === 'cases';
   const vehicleView = view === 'vehicles';
+  const hardwareView = view === 'hardware';
   const isTestAccount = userEmail.trim().toLowerCase() === 'test@ualberta.ca';
   const simulatorFrame = useRef<HTMLIFrameElement>(null);
   const eventSequence = useRef(0);
@@ -183,11 +185,12 @@ export default function App({ onExit, userEmail }: AppProps) {
         </a>
         <div className="navigation-label">WORKSPACE</div>
         <nav className="nav-links" aria-label="Main navigation">
-          <a className={"nav-link" + (!simulationView ? " selected" : "")} href="#overview"><BarChart3 size={18} /> Overview</a>
+          <a className={"nav-link" + (!simulationView && !caseView && !vehicleView && !hardwareView ? " selected" : "")} href="#overview"><BarChart3 size={18} /> Overview</a>
           <a className="nav-link" href="#alerts"><AlertTriangle size={18} /> Active alerts <span className="nav-count">{active.length}</span></a>
           <a className="nav-link" href="#history"><Database size={18} /> Event history</a>
           <a className={'nav-link' + (caseView ? ' selected' : '')} href="#cases"><ClipboardCheck size={18}/> Cases</a>
           <a className={'nav-link' + (vehicleView ? ' selected' : '')} href="#vehicles"><Truck size={18}/> Vehicles</a>
+          <a className={'nav-link' + (hardwareView ? ' selected' : '')} href="#hardware"><RadioTower size={18}/> Hardware</a>
           <a className={'nav-link' + (simulationView ? ' selected' : '')} href="#simulation"><Route size={18} /> Simulation {simulatedAlerts > 0 && <span className="nav-count">{simulatedAlerts}</span>}</a>
         </nav>
         <div className="sidebar-bottom">
@@ -197,7 +200,7 @@ export default function App({ onExit, userEmail }: AppProps) {
 
       <main className="main-content" id="overview">
         <header className="topbar">
-          <div className="breadcrumb"><span>HALO</span><span className="breadcrumb-separator">/</span><strong>{simulationView ? 'Scenario lab' : caseView ? 'Cases' : vehicleView ? 'Vehicles' : 'Overview'}</strong></div>
+          <div className="breadcrumb"><span>HALO</span><span className="breadcrumb-separator">/</span><strong>{simulationView ? 'Scenario lab' : caseView ? 'Cases' : vehicleView ? 'Vehicles' : hardwareView ? 'Hardware' : 'Overview'}</strong></div>
           <div className="topbar-right">
             <span
               className={'api-pill ' + (apiOnline ? 'online' : 'offline')}
@@ -218,6 +221,7 @@ export default function App({ onExit, userEmail }: AppProps) {
 
         <div className="page-content">
           {(caseView || vehicleView) && <SafetyModule view={vehicleView ? 'vehicles' : 'cases'} isDemoAccount={isTestAccount}/>}
+          {hardwareView && <TelemetryPage/>}
           <section className="simulator-page" aria-labelledby="simulation-heading" hidden={!simulationView}>
             <div className="simulation-heading">
               <div>
@@ -273,7 +277,7 @@ export default function App({ onExit, userEmail }: AppProps) {
                   </div>}
             </section>
           </section>
-          {!simulationView && !caseView && !vehicleView && (
+          {!simulationView && !caseView && !vehicleView && !hardwareView && (
             <>
           <div className="page-heading">
             <div><h1 className="display-heading">Overview</h1></div>
