@@ -180,6 +180,7 @@ export default function App({ onExit, userEmail }: AppProps) {
     dateKey(eventDate(event.timestamp)!) === today).length;
   const machines = new Set(events.map((event) => event.machine_id).filter(Boolean)).size;
   const simulatedAlerts = simulationEvents.filter(event => event.event === 'PROXIMITY_ALERT').length;
+  const latestSimulationAlert = simulationEvents.find(event => event.event === 'PROXIMITY_ALERT');
   const openDemoCase = (caseId: string) => {
     setPreferredDemoCaseId(caseId);
     window.location.hash = '#cases';
@@ -294,6 +295,15 @@ export default function App({ onExit, userEmail }: AppProps) {
               <div><span>Current state</span><strong className={simulationActive ? 'danger-text' : ''}>{simulationActive ? 'Warning' : 'Clear'}</strong></div>
               <div><span>Events in session</span><strong>{simulationEvents.length}</strong></div>
             </div>
+            {isTestAccount && latestSimulationAlert && <div className="simulation-quick-case">
+              <div><AlertTriangle size={17}/>
+                <span><strong>Scenario warning captured</strong> · {latestSimulationAlert.zone || 'Vehicle proximity zone'}
+                  <small>Example observation — not a verified incident</small></span></div>
+              <button type="button" onClick={() => reviewSimulationAlert(latestSimulationAlert)}>
+                {sessionCases.some(item => item.id === 'SIM-' + latestSimulationAlert.id) ? 'Open sample case' : 'Review as sample case'}
+                <ArrowRight size={15}/>
+              </button>
+            </div>}
             <div className="simulation-disclaimer">
               <ShieldCheck size={16} />
               <span><strong>Isolated test environment.</strong> Simulation events do not enter live alerts or the Supabase incident database. In the demo account, you can turn an alert into a browser-only sample case.</span>
