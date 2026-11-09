@@ -39,3 +39,9 @@
 .safety-detail .safety-linked:empty{display:none}
 .safety-persistence-footnote{font-size:10px;color:#849dad;line-height:1.6;margin:18px 3px}
 @media(max-width:700px){.safety-form-grid{grid-template-columns:1fr}.safety-mode-toggle span{width:100%;margin-left:0}.safety-org-bar select{max-width:200px}.safety-record-kpis span{padding:9px 10px}}
+
+.safety-mode-toggle{padding:5px;margin-bottom:12px}
+.safety-mode-toggle button{padding:8px 11px}
+.safety-org-bar{padding:9px 13px;margin-bottom:11px}
+.safety-records-head{margin-bottom:12px}
+.safety-record-kpis span{padding:8px 11px}

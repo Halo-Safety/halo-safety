@@ -131,6 +131,10 @@ export default function FtmAnchorMap({ vehicles, samples, now }: Props) {
   const layoutProblem = candidate && validateLayout(candidate);
   const anchors = layout ? getAnchors(layout) : null;
   const estimate = layout && latest ? estimateFtm(layout, latest) : null;
+  // A stale or inconsistent worker estimate must not distort the vehicle map scale.
+  // Keep measured anchors visible, but never plot an untrusted worker position.
+  const plotEstimate = fresh && estimate?.quality === 'self_consistent'
+    && estimate.spread_m <= 0.5 ? estimate : null;
   const trail = useMemo(() => {
     if (!layout || !showTrail || !latest) return [];
     const cutoff = new Date(latest.received_at).getTime() - 180_000;
@@ -140,7 +144,7 @@ export default function FtmAnchorMap({ vehicles, samples, now }: Props) {
   }, [layout, showTrail, latest?.received_at, gatewaySamples.map(s => s.gateway_id + s.received_at).join('|')]);
   const allPoints = anchors ? [
     ...anchors.map(a => ({ x: a.x, y: a.y })),
-    ...(estimate ? [{ x: estimate.x, y: estimate.y }] : []),
+    ...(plotEstimate ? [{ x: plotEstimate.x, y: plotEstimate.y }] : []),
   ] : [];
   const projected = allPoints.length ? makeProjection(allPoints) : null;
 
@@ -222,13 +226,13 @@ export default function FtmAnchorMap({ vehicles, samples, now }: Props) {
                 textAnchor="middle" fontSize="10" fill="#5b8397"
                 stroke="#f4f9fb" strokeWidth="3" paintOrder="stroke">({anchor.x.toFixed(2)}, {anchor.y.toFixed(2)})</text>
             </g>)}
-            {estimate && <g opacity={fresh ? 1 : 0.5}>
-              <circle cx={projected.toX(estimate.x)} cy={projected.toY(estimate.y)} r="15"
-                fill={estimate.quality === 'rough' ? '#fff3e2' : '#f6a851'}
+            {plotEstimate && <g>
+              <circle cx={projected.toX(plotEstimate.x)} cy={projected.toY(plotEstimate.y)} r="15"
+                fill="#f6a851"
                 stroke="#ba722c" strokeWidth="3"
-                strokeDasharray={estimate.quality === 'rough' || !fresh ? '5 5' : undefined}/>
-              <circle cx={projected.toX(estimate.x)} cy={projected.toY(estimate.y)} r="3" fill="#ba722c"/>
-              <text x={projected.toX(estimate.x)} y={projected.toY(estimate.y)-24}
+                strokeDasharray={undefined}/>
+              <circle cx={projected.toX(plotEstimate.x)} cy={projected.toY(plotEstimate.y)} r="3" fill="#ba722c"/>
+              <text x={projected.toX(plotEstimate.x)} y={projected.toY(plotEstimate.y)-24}
                 textAnchor="middle" fontSize="13" fontWeight="700" fill="#9d5d1e"
                 stroke="#f4f9fb" strokeWidth="4" paintOrder="stroke">Worker · estimate</text>
             </g>}
@@ -246,14 +250,14 @@ export default function FtmAnchorMap({ vehicles, samples, now }: Props) {
           <text x="333" y="20" fontSize="12" textAnchor="start" fill="#55778d">+Y ↑</text>
         </svg>
         <div className="ftm-map-legend"><span><i className="ftm-legend-anchor"/> ESP32 anchor</span>
-          <span><i className="ftm-legend-worker"/> Worker estimate</span>
+          <span><i className="ftm-legend-worker"/> Worker estimate (only when usable)</span>
           <span>{fresh ? 'Live readings' : 'Stale / no live data'}</span>
           <span>Solver: nonlinear least squares (L2)</span></div>
-        {estimate && <div className={'ftm-map-quality ' + (estimate.quality === 'rough' || !fresh ? 'uncertain' : '')}>
+        {estimate && <div className={'ftm-map-quality ' + (!plotEstimate ? 'uncertain' : '')}>
           <Crosshair size={16}/>
           <span>{fresh ? 'Latest' : 'Last known'} estimate: X <strong>{metres(estimate.x)}</strong>, Y <strong>{metres(estimate.y)}</strong>.
             Residual <strong>{metres(estimate.residual_m)}</strong>; ±range sensitivity <strong>{metres(estimate.spread_m)}</strong>.
-            {estimate.quality === 'rough' ? ' Geometry or measurements are inconsistent; do not rely on this position.' : ' Geometrically self-consistent, but real-world accuracy is not verified.'}
+            {!fresh ? ' Stale reading — marker hidden.' : estimate.quality === 'rough' ? ' Inconsistent measurements — marker hidden.' : ' Geometrically self-consistent, but real-world accuracy is not verified.'}
           </span>
         </div>}
         {layout && !estimate && <p className="ftm-map-missing">No usable position: three valid ranges and a non-degenerate anchor layout are required.</p>}

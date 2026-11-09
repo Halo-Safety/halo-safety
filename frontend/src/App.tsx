@@ -99,8 +99,12 @@ export default function App({ onExit, userEmail }: AppProps) {
   const [view, setView] = useState(() => window.location.hash.replace(/^#/, '') || 'overview');
   const simulationView = view === 'simulation';
   const caseView = view === 'cases';
+  const alertsView = view === 'alerts';
+  const historyView = view === 'history';
   const vehicleView = view === 'vehicles';
-  const hardwareView = view === 'hardware';
+  // Keep old #hardware bookmarks working, but show the clearer Telemetry name.
+  const telemetryView = view === 'telemetry' || view === 'hardware';
+  const overviewView = !simulationView && !caseView && !vehicleView && !telemetryView && !alertsView && !historyView;
   const isTestAccount = userEmail.trim().toLowerCase() === 'test@ualberta.ca';
   const [overviewMode, setOverviewMode] = useState<'business' | 'live'>(isTestAccount ? 'business' : 'live');
   // Video walkthrough cases never touch Supabase; refresh resets this sandbox.
@@ -113,7 +117,7 @@ export default function App({ onExit, userEmail }: AppProps) {
   const [simulatorHeight, setSimulatorHeight] = useState(1030);
 
   useEffect(() => {
-    const onHashChange = () => setView(window.location.hash.replace(/^#/, '') || 'overview');
+    const onHashChange = () => { setView(window.location.hash.replace(/^#/, '') || 'overview'); window.scrollTo(0, 0); };
     window.addEventListener('hashchange', onHashChange);
     return () => window.removeEventListener('hashchange', onHashChange);
   }, []);
@@ -170,6 +174,15 @@ export default function App({ onExit, userEmail }: AppProps) {
   }, [refresh]);
 
   const ordered = useMemo(() => sortedEvents(events), [events]);
+  const [historyFilter, setHistoryFilter] = useState<'all' | 'alerts' | 'cleared'>('all');
+  const [historySearch, setHistorySearch] = useState('');
+  const filteredHistory = useMemo(() => ordered.filter(item => {
+    const type = eventType(item);
+    if (historyFilter === 'alerts' && type !== 'PROXIMITY_ALERT') return false;
+    if (historyFilter === 'cleared' && type !== 'ALERT_CLEAR') return false;
+    const q = historySearch.trim().toLowerCase();
+    return !q || [item.worker_id, item.machine_id, type, item.zone || ''].some(value => value.toLowerCase().includes(q));
+  }), [ordered, historyFilter, historySearch]);
   const active = useMemo(() => getActiveEvents(events), [events]);
   const chart = useMemo(() => recentChart(events), [events]);
   const maxCount = Math.max(1, ...chart.map((day) => day.count));
@@ -241,12 +254,12 @@ export default function App({ onExit, userEmail }: AppProps) {
         </a>
         <div className="navigation-label">WORKSPACE</div>
         <nav className="nav-links" aria-label="Main navigation">
-          <a className={"nav-link" + (!simulationView && !caseView && !vehicleView && !hardwareView ? " selected" : "")} href="#overview"><BarChart3 size={18} /> Overview</a>
-          <a className="nav-link" href="#alerts" onClick={() => setOverviewMode('live')}><AlertTriangle size={18} /> Active alerts <span className="nav-count">{active.length}</span></a>
-          <a className="nav-link" href="#history" onClick={() => setOverviewMode('live')}><Database size={18} /> Event history</a>
+          <a className={"nav-link" + (overviewView ? " selected" : "")} href="#overview"><BarChart3 size={18} /> Overview</a>
+          <a className={'nav-link' + (alertsView ? ' selected' : '')} href="#alerts"><AlertTriangle size={18} /> Active alerts <span className="nav-count">{active.length}</span></a>
+          <a className={'nav-link' + (historyView ? ' selected' : '')} href="#history"><Database size={18} /> Event history</a>
           <a className={'nav-link' + (caseView ? ' selected' : '')} href="#cases"><ClipboardCheck size={18}/> Cases</a>
           <a className={'nav-link' + (vehicleView ? ' selected' : '')} href="#vehicles"><Truck size={18}/> Vehicles</a>
-          <a className={'nav-link' + (hardwareView ? ' selected' : '')} href="#hardware"><RadioTower size={18}/> Hardware</a>
+          <a className={'nav-link' + (telemetryView ? ' selected' : '')} href="#telemetry"><RadioTower size={18}/> Telemetry</a>
           <a className={'nav-link' + (simulationView ? ' selected' : '')} href="#simulation"><Route size={18} /> Simulation {simulatedAlerts > 0 && <span className="nav-count">{simulatedAlerts}</span>}</a>
         </nav>
         <div className="sidebar-bottom">
@@ -254,9 +267,9 @@ export default function App({ onExit, userEmail }: AppProps) {
         </div>
       </aside>
 
-      <main className="main-content" id="overview">
+      <main className="main-content">
         <header className="topbar">
-          <div className="breadcrumb"><span>HALO</span><span className="breadcrumb-separator">/</span><strong>{simulationView ? 'Scenario lab' : caseView ? 'Cases' : vehicleView ? 'Vehicles' : hardwareView ? 'Hardware' : 'Overview'}</strong></div>
+          <div className="breadcrumb"><span>HALO</span><span className="breadcrumb-separator">/</span><strong>{simulationView ? 'Scenario lab' : caseView ? 'Cases' : vehicleView ? 'Vehicles' : telemetryView ? 'Telemetry' : alertsView ? 'Active alerts' : historyView ? 'Event history' : 'Overview'}</strong></div>
           <div className="topbar-right">
             <span
               className={'api-pill ' + (apiOnline ? 'online' : 'offline')}
@@ -277,17 +290,15 @@ export default function App({ onExit, userEmail }: AppProps) {
 
         <div className="page-content">
           {(caseView || vehicleView) && <SafetyModule view={vehicleView ? 'vehicles' : 'cases'} isDemoAccount={isTestAccount} sessionCases={sessionCases} preferredCaseId={preferredDemoCaseId} onAddDemoAction={assignDemoAction}/>}
-          {hardwareView && <TelemetryPage/>}
+          {telemetryView && <TelemetryPage/>}
           <section className="simulator-page" aria-labelledby="simulation-heading" hidden={!simulationView}>
             <div className="simulation-heading">
               <div>
                 <div className="panel-kicker">SCENARIO LAB / SANDBOX</div>
                 <h1 id="simulation-heading" className="display-heading">Simulation</h1>
-                <p className="simulator-intro">Plan routes, explore blind zones and see how warnings appear in Halo.</p>
+                <p className="simulator-intro">Plan routes, explore blind zones and see how warnings appear in Halo. This is a simulation; no real incidents are recorded.</p>
               </div>
-              <span className={'simulation-state ' + (simulationActive ? 'danger' : '')}>
-                <span className="badge-dot" />{simulationActive ? 'Simulated warning active' : 'Sandbox ready'}
-              </span>
+
             </div>
 
             <div className="simulation-stats" aria-label="This session's simulation results">
@@ -304,15 +315,8 @@ export default function App({ onExit, userEmail }: AppProps) {
                 <ArrowRight size={15}/>
               </button>
             </div>}
-            <div className="simulation-disclaimer">
-              <ShieldCheck size={16} />
-              <span><strong>Isolated test environment.</strong> Simulation events do not enter live alerts or the Supabase incident database. In the demo account, you can turn an alert into a browser-only sample case.</span>
-            </div>
-            <div className="sample-diagrams">
-              <span>Example vehicle diagrams</span>
-              <a href="/simulator/vehicle1.png" target="_blank" rel="noreferrer">Vehicle 1</a>
-              <a href="/simulator/vehicle-2.png" target="_blank" rel="noreferrer">Vehicle 2</a>
-            </div>
+
+
             <div className="simulator-surface">
               <iframe
                 ref={simulatorFrame}
@@ -346,24 +350,20 @@ export default function App({ onExit, userEmail }: AppProps) {
                   </div>}
             </section>
           </section>
-          {!simulationView && !caseView && !vehicleView && !hardwareView && (
-            <>
-          {isTestAccount && <div className="overview-mode-switch" role="group" aria-label="Overview data mode">
-            <button type="button" className={overviewMode === 'business' ? 'active' : ''} onClick={() => setOverviewMode('business')}>Business demo</button>
-            <button type="button" className={overviewMode === 'live' ? 'active' : ''} onClick={() => setOverviewMode('live')}>Live sensor events</button>
-            <span>Demo figures are fictional and separate from real telemetry.</span>
-          </div>}
-          {isTestAccount && overviewMode === 'business'
-            ? <DemoBusinessOverview sessionCases={sessionCases} onOpenCase={openDemoCase}/>
-            : <>
-          <div className="page-heading">
-            <div><h1 className="display-heading">Overview</h1></div>
-          </div>
-
-          {error && <div className="error-banner" role="alert">
-            <AlertTriangle size={20} /><span>Unable to load events: {error}</span>
-          </div>}
-
+          {overviewView && <>
+            {isTestAccount && <div className="overview-mode-switch" role="group" aria-label="Overview data mode">
+              <button type="button" className={overviewMode === 'business' ? 'active' : ''} onClick={() => setOverviewMode('business')}>Business demo</button>
+              <button type="button" className={overviewMode === 'live' ? 'active' : ''} onClick={() => setOverviewMode('live')}>Live sensor overview</button>
+              <span>Fictional demo figures never count as live events.</span>
+            </div>}
+            {isTestAccount && overviewMode === 'business'
+              ? <DemoBusinessOverview sessionCases={sessionCases} onOpenCase={openDemoCase}/>
+              : <>
+                <div className="page-heading">
+                  <div><div className="panel-kicker">MONITORING / SUMMARY</div><h1 className="display-heading">Overview</h1>
+                    <p>Snapshot of recorded proximity signals. Open Active alerts or Event history for details.</p></div>
+                </div>
+                {error && <div className="error-banner" role="alert"><AlertTriangle size={18}/><span>Unable to load events: {error}</span></div>}
           <section className="metrics" aria-label="Event statistics">
             <div className="metric-card">
               <div className="metric-label">Recorded signals <Activity size={18}/></div>
@@ -386,8 +386,7 @@ export default function App({ onExit, userEmail }: AppProps) {
               <div className="metric-desc">Unique reported machine IDs</div>
             </div>
           </section>
-
-          <div className="content-grid">
+                <div className="overview-trend-grid">
             <section className="panel trend-panel">
               <div className="panel-header">
                 <div><div className="panel-kicker">TRENDS / 7 DAYS</div><h2>Signal activity</h2></div>
@@ -408,56 +407,13 @@ export default function App({ onExit, userEmail }: AppProps) {
               </div>
               <div className="panel-foot"><span>Counts are raw sensor alerts, not verified incidents.</span></div>
             </section>
-
-            <section className="panel alerts-panel" id="alerts">
-              <div className="panel-header">
-                <div><div className="panel-kicker">ATTENTION / NOW</div><h2>Active warnings</h2></div>
-                <span className={'status-counter ' + (active.length ? 'warning' : '')}>{active.length} active</span>
-              </div>
-              {active.length === 0 ? (
-                <div className="empty-alerts"><div className="empty-icon"><CheckCircle2 size={28}/></div>
-                  <strong>No active alerts</strong>
-                  <p>All recorded proximity alerts have been cleared, or no events have been received yet.</p>
+                  <section className="panel overview-quick-links">
+                    <div className="panel-header"><div><div className="panel-kicker">MONITORING</div><h2>Explore activity</h2></div></div>
+                    <a href="#alerts"><AlertTriangle size={18}/><span><strong>Active alerts</strong><small>{active.length} uncleared worker–machine pairs</small></span><ArrowRight size={15}/></a>
+                    <a href="#history"><Database size={18}/><span><strong>Event history</strong><small>{events.length} recorded sensor events</small></span><ArrowRight size={15}/></a>
+                    <a href="#cases"><ClipboardCheck size={18}/><span><strong>Safety cases</strong><small>Review candidate incidents and corrective actions</small></span><ArrowRight size={15}/></a>
+                  </section>
                 </div>
-              ) : (
-                <div className="active-list">
-                  {active.slice(0, 5).map((event, index) => (
-                    <div className="active-item" key={String(event.id ?? index)}>
-                      <div className="active-icon"><AlertTriangle size={18}/></div>
-                      <div><strong>{event.worker_id} near {event.machine_id}</strong><small>{formatTime(event.timestamp)}</small></div>
-                    </div>
-                  ))}
-                </div>
-              )}
-              <div className="panel-foot">
-                <span><span className="live-indicator" /> {apiOnline ? 'Refreshes every 3 seconds' : 'Connection unavailable'}</span>
-              </div>
-            </section>
-          </div>
-
-          <section className="panel history-panel" id="history">
-            <div className="panel-header">
-              <div><div className="panel-kicker">ACTIVITY LOG / RECENT</div><h2>Event history</h2></div>
-              <span className="subtle-tag">{events.length} records</span>
-            </div>
-            <div className="table-scroller">
-              <table>
-                <thead><tr><th>Event</th><th>Worker</th><th>Machine</th><th>RSSI</th><th>Timestamp</th></tr></thead>
-                <tbody>
-                  {ordered.slice(0, 20).map((event, index) => (
-                    <tr key={String(event.id ?? index) + ':' + String(event.timestamp ?? '')}>
-                      <td><EventBadge type={eventType(event)}/></td>
-                      <td className="strong-cell">{event.worker_id}</td>
-                      <td>{event.machine_id}</td>
-                      <td className="mono-cell">{typeof event.rssi === 'number' ? event.rssi + ' dBm' : '—'}</td>
-                      <td className="date-cell">{formatTime(event.timestamp)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              {ordered.length === 0 && <div className="empty-table">No recorded events yet.</div>}
-            </div>
-          </section>
           <section className="panel sandbox-overview" aria-label="Simulation activity">
             <div className="panel-header">
               <div><div className="panel-kicker">SANDBOX / LOCAL SESSION</div><h2>Simulation activity</h2></div>
@@ -474,10 +430,88 @@ export default function App({ onExit, userEmail }: AppProps) {
               <a className="sandbox-open" href="#simulation">Open scenario lab →</a>
             </div>
           </section>
-          <footer className="footer"><span><ShieldCheck size={15}/> Halo</span><span>{lastUpdate ? 'Last synced ' + lastUpdate.toLocaleTimeString() : 'Waiting for first sync'}</span></footer>
+                <footer className="footer"><span><ShieldCheck size={15}/> Halo</span><span>{lastUpdate ? 'Last synced ' + lastUpdate.toLocaleTimeString() : 'Waiting for first sync'}</span></footer>
+              </>}
           </>}
-            </>
-          )}
+          {alertsView && <>
+            <div className="page-heading">
+              <div><div className="panel-kicker">MONITORING / ACTION REQUIRED</div><h1 className="display-heading">Active alerts</h1>
+                <p>Uncleared worker–machine proximity warnings from the live sensor event stream.</p></div>
+              <span className={'status-counter ' + (active.length ? 'warning' : '')}>{active.length} active</span>
+            </div>
+            <div className="monitoring-note"><ShieldCheck size={16}/> Only real `sensor_events` appear as active alerts. Simulation examples are isolated and cannot be mistaken for live warnings.</div>
+            {error && <div className="error-banner" role="alert"><AlertTriangle size={18}/><span>Unable to load alerts: {error}</span></div>}
+            <section className="panel monitoring-alerts">
+              <div className="panel-header"><div><div className="panel-kicker">LIVE WARNINGS</div><h2>Current alerts</h2></div>
+                <span className="subtle-tag">{apiOnline ? 'Cloud connected · 3 s refresh' : 'Cloud unavailable'}</span></div>
+              {active.length === 0 ? <div className="empty-alerts"><div className="empty-icon"><CheckCircle2 size={28}/></div>
+                <strong>{apiOnline ? 'No recorded active warnings' : 'Live alert status unavailable'}</strong>
+                <p>{apiOnline ? 'No uncleared alerts have been recorded. This does not verify that the work area is safe.' : 'The event query is unavailable. A disconnected source does not mean that conditions are safe.'}</p>
+              </div> : <div className="active-list">
+                {active.map((item, index) => <div className="active-item" key={String(item.id ?? index)}>
+                  <div className="active-icon"><AlertTriangle size={19}/></div>
+                  <div><strong>{item.worker_id} near {item.machine_id}</strong>
+                    <small>Triggered {formatTime(item.timestamp)}{item.zone ? ' · ' + item.zone : ''}</small></div>
+                  <EventBadge type={eventType(item)}/>
+                </div>)}
+              </div>}
+            </section>
+            {isTestAccount && <section className="panel monitoring-sandbox">
+              <div className="panel-header"><div><div className="panel-kicker">SANDBOX / SEPARATE FROM LIVE</div><h2>Simulation alerts</h2></div>
+                <span className="subtle-tag">Demo only</span></div>
+              <div className="monitoring-sandbox-content">
+                <p>{simulationActive ? 'The simulator currently has a warning active.' : 'No active simulated warning.'} This is not a real sensor alert.</p>
+                {latestSimulationAlert && <div className="monitoring-sandbox-latest"><span>{latestSimulationAlert.zone || 'Vehicle approach zone'} · {formatTime(latestSimulationAlert.timestamp)}</span>
+                  <button type="button" onClick={() => reviewSimulationAlert(latestSimulationAlert)}>Review sample case <ArrowRight size={14}/></button></div>}
+                <a href="#simulation">Open scenario simulator <ArrowRight size={14}/></a>
+              </div>
+            </section>}
+          </>}
+          {historyView && <>
+            <div className="page-heading">
+              <div><div className="panel-kicker">MONITORING / AUDIT TRAIL</div><h1 className="display-heading">Event history</h1>
+                <p>Chronological record of live sensor events, separate from simulated scenarios and reviewed safety cases.</p></div>
+              <span className="subtle-tag">{events.length} records loaded</span>
+            </div>
+            {error && <div className="error-banner" role="alert"><AlertTriangle size={18}/><span>Unable to load history: {error}</span></div>}
+            <section className="panel history-panel">
+              <div className="panel-header"><div><div className="panel-kicker">LIVE EVENT LOG</div><h2>Sensor event history</h2></div>
+                <span className="subtle-tag">{filteredHistory.length} matching</span></div>
+              <div className="history-toolbar">
+                <label>Filter
+                  <select value={historyFilter} onChange={event => setHistoryFilter(event.target.value as 'all' | 'alerts' | 'cleared')}>
+                    <option value="all">All events</option><option value="alerts">Proximity alerts</option><option value="cleared">Alert clears</option>
+                  </select>
+                </label>
+                <label>Search
+                  <input type="search" placeholder="Worker, machine or type" value={historySearch} onChange={event => setHistorySearch(event.target.value)}/>
+                </label>
+              </div>
+              <div className="table-scroller"><table>
+                <thead><tr><th>Event</th><th>Worker</th><th>Machine</th><th>RSSI</th><th>Timestamp</th></tr></thead>
+                <tbody>{filteredHistory.map((item,index) => <tr key={String(item.id ?? index) + ':' + String(item.timestamp ?? '')}>
+                  <td><EventBadge type={eventType(item)}/></td>
+                  <td className="strong-cell">{item.worker_id}</td>
+                  <td>{item.machine_id}</td>
+                  <td className="mono-cell">{typeof item.rssi === 'number' ? item.rssi + ' dBm' : '—'}</td>
+                  <td className="date-cell">{formatTime(item.timestamp)}</td>
+                </tr>)}</tbody>
+              </table>
+                {filteredHistory.length === 0 && <div className="empty-table">{events.length === 0 ? 'No live sensor events recorded yet.' : 'No events match the current filters.'}</div>}
+              </div>
+              <div className="panel-foot">These are raw triggers, not verified near misses. Up to 500 recent records are loaded.</div>
+            </section>
+            {isTestAccount && simulationEvents.length > 0 && <section className="panel monitoring-sandbox">
+              <div className="panel-header"><div><div className="panel-kicker">SANDBOX / NOT REAL SENSOR DATA</div><h2>Simulation session history</h2></div>
+                <span className="subtle-tag">{simulationEvents.length} events</span></div>
+              <div className="simulation-event-list">
+                {simulationEvents.slice(0, 10).map(item => <div className="simulation-event-row" key={item.id}>
+                  <EventBadge type={item.event}/><span>{item.zone || 'Vehicle approach zone'}</span><time>{formatTime(item.timestamp)}</time>
+                  {item.event === 'PROXIMITY_ALERT' && <button type="button" className="simulation-case-link" onClick={() => reviewSimulationAlert(item)}>Review as sample case <ArrowRight size={14}/></button>}
+                </div>)}
+              </div>
+            </section>}
+          </>}
         </div>
       </main>
     </div>
