@@ -1,9 +1,29 @@
 import unittest
+from unittest.mock import MagicMock, patch
 
 from cloud_gateway import _endpoint, _parse_geometry, build_payload
+from worker_locator import open_worker_port
 
 
 class FtmCloudUplinkTests(unittest.TestCase):
+    def test_worker_serial_opens_only_after_port_is_configured(self):
+        fake = MagicMock()
+        observed = []
+
+        def port_is_configured():
+            observed.append((fake.port, fake.dtr, fake.rts))
+
+        fake.open.side_effect = port_is_configured
+        with patch("worker_locator.serial.Serial", return_value=fake) as factory:
+            result = open_worker_port("COM7")
+
+        self.assertIs(result, fake)
+        factory.assert_called_once_with(
+            baudrate=115200, timeout=0.25, write_timeout=2, port=None
+        )
+        fake.open.assert_called_once_with()
+        self.assertEqual(observed, [("COM7", False, False)])
+
     def test_ranges_only_without_geometry(self):
         sample = build_payload({
             "ranges": {"HaloFront": 1.2, "HaloRearL": 2.3, "HaloRearR": 3.4},
