@@ -339,7 +339,7 @@ export default function App({ onExit, userEmail }: AppProps) {
                         <time>{formatTime(item.timestamp)}</time>
                         {isTestAccount && item.event === 'PROXIMITY_ALERT' &&
                           <button type="button" className="simulation-case-link" onClick={() => reviewSimulationAlert(item)}>
-                            {sessionCases.some(c => c.id === 'SIM-' + item.id) ? 'Open sample case' : 'Review as sample case'} <ArrowRight size={14}/>
+                            {sessionCases.some(c => c.id === 'SIM-' + item.id) ? 'Open case' : 'Review case'} <ArrowRight size={14}/>
                           </button>}
                       </div>
                     ))}
