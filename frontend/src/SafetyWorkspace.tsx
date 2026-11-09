@@ -231,6 +231,7 @@ export default function SafetyWorkspace({ view, isDemoAccount, sessionCases = []
     return true;
   }), [allCases, filter, site]);
 
+  const selectedVisibleCase = cases.find(item => item.id === selectedId) || cases[0];
   const needsReview = allCases.filter(item => item.status === 'Needs review' || item.status === 'Investigating').length;
   const confirmed = allCases.filter(item => item.classification === 'Reviewed near miss').length;
   const openActions = allCases.filter(item => item.recommendedAction && item.recommendedAction.status !== 'Completed').length;
@@ -272,7 +273,7 @@ export default function SafetyWorkspace({ view, isDemoAccount, sessionCases = []
           {cases.length === 0 && <p className="safety-empty">No cases match these filters.</p>}
           {cases.map(item => {
             const asset = demoVehicles.find(vehicle => vehicle.id === item.vehicleId);
-            return <button type="button" className={'safety-case-row' + (selected.id === item.id ? ' selected' : '')} key={item.id} onClick={() => setSelectedId(item.id)}>
+            return <button type="button" className={'safety-case-row' + (selectedVisibleCase?.id === item.id ? ' selected' : '')} key={item.id} onClick={() => setSelectedId(item.id)}>
               <div className="safety-case-top"><span>{item.id} · {prettyDate(item.occurredAt)}</span><span className={'safety-pill ' + statusClass(item.status)}>{item.status}</span></div>
               <strong>{item.title}</strong>
               <div className="safety-case-meta"><Truck size={14}/>{asset?.name} · {item.zone}</div>
@@ -280,9 +281,11 @@ export default function SafetyWorkspace({ view, isDemoAccount, sessionCases = []
             </button>;
           })}
         </div>
-        <CaseDetails selected={cases.find(item => item.id === selected.id) || cases[0] || selected}
-          sessionCase={sessionCases.some(item => item.id === (cases.find(item => item.id === selected.id) || cases[0] || selected).id)}
-          onReviewCase={onReviewCase}/>
+        {selectedVisibleCase ? <CaseDetails selected={selectedVisibleCase}
+          sessionCase={selectedVisibleCase.id.startsWith('SIM-')}
+          onReviewCase={onReviewCase}/> : <aside className="safety-detail">
+          <p className="safety-empty">No cases match the selected filters.</p>
+        </aside>}
       </div>
     </> : <>
       <div className="safety-vehicle-layout">
